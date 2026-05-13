@@ -363,6 +363,22 @@
     footer a:hover { color: var(--text); }
     footer .sep { margin: 0 0.75rem; opacity: 0.3; }
 
+    /* ── Tabs ── */
+    .tab-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: var(--sans);
+      padding: 0.4rem 1rem;
+      transition: all .15s;
+    }
+
+    .tab-btn:hover { color: var(--text); border-color: var(--text-dim); }
+    .tab-btn.active { color: var(--white); background: var(--bg3); border-color: var(--green-dim); }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       .hero { padding: 4rem 1.5rem 3rem; }
@@ -556,20 +572,89 @@
 
 <hr class="divider">
 
-<!-- ── Install CTA ── -->
-<section class="section" style="text-align:center;padding-bottom:6rem;">
-  <h2 style="margin-bottom:0.5rem;">Get started</h2>
-  <p style="color:var(--text-dim);margin-bottom:2rem;">Requires Docker, tmux, and <code style="font-family:var(--mono);font-size:0.9em;color:var(--blue)">ANTHROPIC_API_KEY</code></p>
+<!-- ── Get started ── -->
+<section class="section" id="install" style="padding-bottom:6rem;">
+  <div class="section-label">Get started</div>
+  <h2 style="margin-bottom:0.5rem;">Install cbox</h2>
+  <p style="color:var(--text-dim);margin-bottom:2rem;">Pick your preferred setup method.</p>
 
-  <div style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;">
-    <div class="install-bar">
-      <span class="prompt">$</span>
-      <span class="cmd">bun install -g @_mehrad/cbox</span>
-      <button class="copy-btn" onclick="copyInstall(this)">copy</button>
+  <!-- Prerequisites -->
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:2rem;">
+    <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:0.75rem;font-family:var(--mono);">Prerequisites</div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.875rem;">
+      <div style="display:flex;align-items:baseline;gap:0.75rem;">
+        <span style="color:var(--green);font-family:var(--mono);">✓</span>
+        <span><a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;">Docker</a> installed and running</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:0.75rem;">
+        <span style="color:var(--green);font-family:var(--mono);">✓</span>
+        <span><a href="https://docs.anthropic.com/en/docs/claude-code/getting-started" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;">Claude Code</a> installed and logged in (<code style="font-family:var(--mono);font-size:0.85em;color:var(--text);">claude login</code>)</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:0.75rem;">
+        <span style="color:var(--green);font-family:var(--mono);">✓</span>
+        <span><a href="https://github.com/tmux/tmux" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;">tmux</a> — required for <code style="font-family:var(--mono);font-size:0.85em;color:var(--text);">cbox session</code> and <code style="font-family:var(--mono);font-size:0.85em;color:var(--text);">cbox attach</code></span>
+      </div>
     </div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1rem;" id="install-tabs">
+    <button class="tab-btn active" onclick="showTab('cli')" id="tab-cli">CLI install</button>
+    <button class="tab-btn" onclick="showTab('docker')" id="tab-docker">Prebuilt image</button>
+  </div>
+
+  <!-- CLI tab -->
+  <div id="panel-cli">
+    <div class="terminal" style="max-width:560px;">
+      <div class="terminal-bar">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+      </div>
+      <div class="terminal-body">
+        <div style="color:var(--text-dim);margin-bottom:0.5rem;font-size:0.8rem;"># global install</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">bun install -g @_mehrad/cbox</span></div>
+          <button class="copy-btn" onclick="copyText(this,'bun install -g @_mehrad/cbox')">copy</button>
+        </div>
+        <div style="color:var(--text-dim);margin-top:0.75rem;margin-bottom:0.5rem;font-size:0.8rem;"># or run without installing</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">bunx @_mehrad/cbox "your prompt"</span></div>
+          <button class="copy-btn" onclick="copyText(this,'bunx @_mehrad/cbox')">copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docker tab -->
+  <div id="panel-docker" style="display:none;">
+    <div class="terminal" style="max-width:560px;">
+      <div class="terminal-bar">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+      </div>
+      <div class="terminal-body">
+        <div style="color:var(--text-dim);margin-bottom:0.5rem;font-size:0.8rem;"># pull the prebuilt image</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">docker pull registry.gitlab.com/mehrad.meraji/cbox:latest</span></div>
+          <button class="copy-btn" onclick="copyText(this,'docker pull registry.gitlab.com/mehrad.meraji/cbox:latest')">copy</button>
+        </div>
+        <div style="color:var(--text-dim);margin-top:0.75rem;margin-bottom:0.5rem;font-size:0.8rem;"># run a prompt directly</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">docker run --rm -it \</span></div>
+        </div>
+        <div style="padding-left:1.5rem;"><span class="t-cmd">-e ANTHROPIC_API_KEY \</span></div>
+        <div style="padding-left:1.5rem;"><span class="t-cmd">-v ~/.claude:/root/.claude:ro \</span></div>
+        <div style="padding-left:1.5rem;"><span class="t-cmd">--add-host=host.docker.internal:host-gateway \</span></div>
+        <div style="padding-left:1.5rem;"><span class="t-cmd">registry.gitlab.com/mehrad.meraji/cbox:latest \</span></div>
+        <div style="padding-left:1.5rem;"><span class="t-cmd">claude --dangerously-skip-permissions "your prompt"</span></div>
+        <div class="t-blank"></div>
+        <div style="color:var(--text-dim);font-size:0.8rem;"># or use cbox run/session to manage it automatically</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem;text-align:center;">
     <a href="https://gitlab.com/mehrad.meraji/cbox"
        target="_blank" rel="noopener"
-       style="color:var(--text-dim);text-decoration:none;font-size:0.9rem;border:1px solid var(--border);padding:0.5rem 1.25rem;border-radius:var(--radius);transition:all .15s;"
+       style="color:var(--text-dim);text-decoration:none;font-size:0.9rem;border:1px solid var(--border);padding:0.5rem 1.25rem;border-radius:var(--radius);transition:all .15s;display:inline-block;"
        onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-dim)'"
        onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">
       View source on GitLab →
@@ -586,12 +671,19 @@
 </footer>
 
 <script>
-  function copyInstall(btn) {
-    navigator.clipboard.writeText("bun install -g @_mehrad/cbox").then(() => {
+  function copyText(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
       btn.textContent = "copied!";
       btn.classList.add("copied");
       setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("copied"); }, 2000);
     });
+  }
+
+  function showTab(name) {
+    document.getElementById("panel-cli").style.display = name === "cli" ? "" : "none";
+    document.getElementById("panel-docker").style.display = name === "docker" ? "" : "none";
+    document.getElementById("tab-cli").classList.toggle("active", name === "cli");
+    document.getElementById("tab-docker").classList.toggle("active", name === "docker");
   }
 </script>
 
