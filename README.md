@@ -1,93 +1,203 @@
-# cbox
+# csb — Claude Sandbox CLI
 
+Run Claude Code in a throwaway Docker container. One-shot automation or persistent interactive sessions that survive terminal disconnects.
 
+## Requirements
 
-## Getting started
+- [Docker](https://docs.docker.com/get-docker/) (running)
+- [tmux](https://github.com/tmux/tmux) (required for `session`, `attach`)
+- `ANTHROPIC_API_KEY` environment variable set
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Install
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/mehrad.meraji/cbox.git
-git branch -M main
-git push -uf origin main
+```sh
+bun install -g csb     # global install
+bunx csb               # no-install, always latest
 ```
 
-## Integrate with your tools
+## Quick Start
 
-* [Set up project integrations](https://gitlab.com/mehrad.meraji/cbox/-/settings/integrations)
+```sh
+# One-shot: run a prompt and stream output
+csb "refactor the auth module to use JWT"
 
-## Collaborate with your team
+# Interactive: persistent Claude Code session
+csb session --mount .
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+# Mount current directory and run a task from a file
+csb run -f task.md --mount .
 
-## Test and Deploy
+# JSON output for scripting
+csb run -j "list all TODO comments" --mount ./src
+```
 
-Use the built-in continuous integration in GitLab.
+## Commands
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+### One-shot mode
 
-***
+```sh
+csb "<prompt>"                        # implicit run
+csb run "<prompt>"                    # explicit (same behaviour)
+csb run -f task.md                    # prompt from file
+csb run -j "<prompt>"                 # JSON output
+csb run --mount . "<prompt>"          # mount cwd read-write
+csb run --mount ./src:ro "<prompt>"   # mount read-only
+csb run --env KEY=VALUE "<prompt>"    # pass env var into container
+csb run --no-config "<prompt>"        # skip mounting ~/.claude
+csb run --no-browser "<prompt>"       # skip agent-browser (lighter image)
+```
 
-# Editing this README
+Streams Claude Code's stdout/stderr directly. Exits with the container's exit code.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Interactive session mode
 
-## Suggestions for a good README
+```sh
+csb session                           # start interactive session
+csb session --mount .                 # mount cwd read-write
+csb session --mount ./src:ro          # mount read-only
+csb session --name refactor-auth      # named session
+csb session --env KEY=VALUE           # pass env var
+csb session --no-config               # skip mounting ~/.claude
+csb session --no-browser              # lighter container
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Creates a tmux session on the host, starts Docker inside it. Attaching/detaching from tmux leaves the container running. Reconnect anytime with `csb attach`.
 
-## Name
-Choose a self-explaining name for your project.
+### Session management
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```sh
+csb list                              # list active sessions
+csb attach <id|name>                  # reattach to a session
+csb kill <id|name>                    # stop container + tmux + prune registry
+csb kill --all                        # kill everything
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+`csb list` cross-references live sessions against `docker ps` and automatically prunes dead entries.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### Image management
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```sh
+csb build                             # force rebuild Docker image
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+The image is built automatically on first run and cached. It rebuilds when the CLI version changes or `mcpPackages` in config changes.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Flags
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+| Flag | Commands | Description |
+|---|---|---|
+| `--mount <path>` or `--mount <path>:ro` | `run`, `session` | Mount a host path into `/workspace` (default: read-write) |
+| `--env KEY=VALUE` | `run`, `session` | Pass an environment variable into the container (repeatable) |
+| `--no-config` | `run`, `session` | Skip mounting `~/.claude` (fully isolated container) |
+| `--no-browser` | `run`, `session` | Skip agent-browser (smaller, faster startup) |
+| `-f, --file <path>` | `run` | Read prompt from a file instead of argument |
+| `-j, --json` | `run` | Wrap output in a JSON envelope |
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## Mounts
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+`--mount .` resolves to the absolute path of your cwd at invocation time and mounts it as `-v /abs/path:/workspace:rw` inside the container. All mounts land at `/workspace`.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+```sh
+csb run --mount .            # /workspace = cwd (read-write)
+csb run --mount ./src:ro     # /workspace = ./src (read-only)
+csb run --mount /abs/path    # /workspace = /abs/path (read-write)
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Tools Inside the Container
 
-## License
-For open source projects, say how it is licensed.
+| Tool | Description |
+|---|---|
+| `claude` | Claude Code with `--dangerously-skip-permissions` |
+| `agent-browser` | Headless browser automation (Chrome baked in) |
+| Host skills | Mounted from `~/.claude` (unless `--no-config`) |
+| MCP servers | Host config mounted read-only; `localhost` URLs rewritten to `host.docker.internal` |
+| Local MCP packages | Installed at image build time via `mcpPackages` in config |
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## JSON Output (`-j`)
+
+```json
+{
+  "output": "...",
+  "exitCode": 0,
+  "error": null
+}
+```
+
+On failure:
+
+```json
+{
+  "output": "",
+  "exitCode": 1,
+  "error": "Claude Code exited with code 1"
+}
+```
+
+Always valid JSON — safe to pipe into `jq`.
+
+## Configuration
+
+`~/.config/csb/config.json`:
+
+```json
+{
+  "defaultMountMode": "rw",
+  "terminalApp": "Terminal",
+  "mcpPackages": ["@my-org/my-mcp-server"]
+}
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `defaultMountMode` | `"rw"` | Default mount mode (`"rw"` or `"ro"`) |
+| `terminalApp` | `"Terminal"` | Terminal for Raycast attach (`"Terminal"` or `"iTerm"`) |
+| `mcpPackages` | `[]` | npm packages for local-process MCP servers (installed in image) |
+
+Adding or removing a package in `mcpPackages` triggers an automatic image rebuild on the next run.
+
+## Session Registry
+
+Active sessions are tracked at `~/.config/csb/sessions.json`. Each session entry records its ID, name, tmux session name, container name, mount path, and creation time. Writes are atomic (temp file + rename).
+
+## Raycast Integration
+
+Four Script Commands live in `raycast/`:
+
+| Script | Behaviour |
+|---|---|
+| `csb-list-sessions.sh` | Searchable list of active sessions |
+| `csb-attach-session.sh` | Opens Terminal and runs `csb attach <id>` |
+| `csb-kill-session.sh` | Runs `csb kill <id>` with confirmation |
+| `csb-run-prompt.sh` | Runs `csb run -j "<input>"`, shows output inline |
+
+Copy the scripts into your Raycast Script Commands directory. The terminal app used by `csb-attach-session.sh` is configurable via `terminalApp` in config.
+
+## MCP Servers
+
+**Network MCP servers** (configured with `localhost`/`127.0.0.1` URLs) are reachable from inside the container — csb patches the config transparently at runtime, replacing those URLs with `host.docker.internal`. The host config is never modified; the patched copy lives in a temp file for the duration of the run.
+
+Network MCP servers must already be running on the host before invoking `csb`.
+
+**Local process MCP servers** run inside the container as Claude Code child processes. Install them by adding their npm package names to `mcpPackages` in config and running `csb build`.
+
+## Security
+
+- `ANTHROPIC_API_KEY` is passed as an environment variable reference — the value is never embedded in command strings, shell history, or tmux state.
+- `~/.claude` is mounted **read-only**. Claude Code inside the container cannot modify your host config.
+- MCP config patching writes to a system temp directory. Your `~/.claude/settings.json` is never touched.
+
+## Docker Image
+
+Based on `node:20-bookworm-slim` with Chrome dependencies for headless browser support. Images are tagged `csb:<version>` or `csb:<version>-<mcpHash>`.
+
+Old images are left in place after upgrades. Clean them up with `docker image prune`.
+
+## Building from Source
+
+```sh
+git clone https://github.com/mehrad/csb
+cd csb
+bun install
+bun run build        # produces dist/csb
+bun test             # run test suite
+```
