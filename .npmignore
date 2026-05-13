@@ -8,3 +8,4 @@ tsconfig.json
 bun.lock
 .gitlab-ci.yml
 dist/*.map
+dist/cbox
