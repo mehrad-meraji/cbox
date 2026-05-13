@@ -1,0 +1,5 @@
+#!/bin/sh
+DIR=$(cd "$(dirname "$0")/.." && pwd)
+ARCH=$(uname -m)
+[ "$ARCH" = "arm64" ] && exec "$DIR/dist/cbox-darwin-arm64" "$@"
+exec "$DIR/dist/cbox-darwin-x64" "$@"
