@@ -43,11 +43,12 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
   }
 
   let id = generateId();
-  const tmuxSession = `csb-${id}`;
+  let tmuxSession = `csb-${id}`;
 
   // Retry once on name collision
   if (tmuxSessionExists(tmuxSession)) {
     id = generateId();
+    tmuxSession = `csb-${id}`;
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY!;

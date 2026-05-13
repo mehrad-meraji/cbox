@@ -1,5 +1,5 @@
 import { checkDocker } from "../checks.ts";
-import { buildImage, imageExists } from "../docker.ts";
+import { buildImage } from "../docker.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
 import { version } from "../../package.json";
