@@ -208,70 +208,22 @@
 
     /* ── SANDBOX VISUALIZATION ── */
     .sandbox-viz {
-      display: grid;
-      grid-template-columns: 32px 32px 1fr 28px;
-      grid-template-rows: 1fr;
-      gap: 8px;
       height: 340px;
-      padding: 1rem;
-      background: var(--panel);
-      border: 1px solid var(--border);
       border-radius: var(--r);
       overflow: hidden;
-    }
-
-    /* corner bracket decoration */
-    .sandbox-viz::before, .sandbox-viz::after {
-      content: '';
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      border-color: var(--teal);
-      border-style: solid;
-      pointer-events: none;
-    }
-    .sandbox-viz::before {
-      top: 6px; left: 6px;
-      border-width: 1px 0 0 1px;
-    }
-    .sandbox-viz::after {
-      bottom: 6px; right: 6px;
-      border-width: 0 1px 1px 0;
-    }
-
-    /* indicator bar columns */
-    .bar-col {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      gap: 2px;
-      align-items: center;
-    }
-
-    .bar {
-      width: 10px;
-      border-radius: 1px;
-      animation: bar-flicker 3s ease-in-out infinite;
-    }
-
-    .bar-col:nth-child(1) .bar { background: var(--teal); animation-delay: calc(var(--i) * -0.31s); }
-    .bar-col:nth-child(2) .bar { background: var(--pink); animation-delay: calc(var(--i) * -0.27s + 0.5s); }
-
-    @keyframes bar-flicker {
-      0%, 100% { opacity: 0.7; transform: scaleY(1); }
-      50% { opacity: 1; transform: scaleY(1.05); }
     }
 
     /* center terminal panel */
     .sandbox-screen {
       border: 1px solid var(--teal);
-      border-radius: 3px;
+      border-radius: var(--r);
       box-shadow: 0 0 20px var(--teal-glow), inset 0 0 30px rgba(0,232,176,0.03);
       background: #0a0c14;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       animation: glow-pulse 4s ease-in-out infinite;
+      height: 100%;
     }
 
     @keyframes glow-pulse {
@@ -336,54 +288,6 @@
       50% { opacity: 0; }
     }
 
-    /* status dot column */
-    .dot-col {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      animation: dot-pulse 3s ease-in-out infinite;
-    }
-
-    .status-dot.on  {
-      background: var(--teal);
-      box-shadow: 0 0 6px var(--teal);
-    }
-    .status-dot.on2  {
-      background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-      animation-delay: -1s;
-    }
-    .status-dot.mid {
-      background: var(--amber);
-      box-shadow: 0 0 4px var(--amber);
-      animation-delay: -2s;
-    }
-    .status-dot.off {
-      background: transparent;
-      border: 1px solid var(--border2);
-      animation: none;
-    }
-
-    @keyframes dot-pulse {
-      0%, 100% { opacity: 0.8; }
-      50% { opacity: 1; transform: scale(1.2); }
-    }
-
-    .viz-label {
-      font-size: 0.55rem;
-      color: var(--text-dim);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      text-align: center;
-      margin-top: 0.4rem;
-    }
 
     /* ── DIVIDER ── */
     .section-divider {
@@ -796,7 +700,7 @@
 <nav>
   <a class="nav-logo" href="#">
     <span class="nav-logo-bracket">[</span>cbox<span class="nav-logo-bracket">]</span>
-    <span class="nav-ver">v0.1.1</span>
+    <span class="nav-ver">v0.1.2</span>
   </a>
   <div class="nav-links">
     <a href="#modes">Modes</a>
@@ -827,12 +731,6 @@
 
   <!-- visualization -->
   <div class="sandbox-viz">
-    <!-- left bar col 1 (teal) -->
-    <div class="bar-col" id="bars1"></div>
-    <!-- left bar col 2 (pink) -->
-    <div class="bar-col" id="bars2"></div>
-
-    <!-- center screen -->
     <div class="sandbox-screen">
       <div class="screen-bar">
         <span class="screen-dot screen-dot-r"></span>
@@ -850,34 +748,6 @@
         <div><span class="sc-amber">▶</span> <span class="sc-text">Reading src/auth.ts</span></div>
         <div><span class="sc-amber">▶</span> <span class="sc-text">Writing src/auth.ts</span></div>
         <div><span class="sc-teal">✓</span> <span class="sc-text">Done</span> <span class="cursor"></span></div>
-      </div>
-    </div>
-
-    <!-- right dot column -->
-    <div class="dot-col">
-      <div>
-        <div class="status-dot on"></div>
-        <div class="viz-label">tmux</div>
-      </div>
-      <div>
-        <div class="status-dot on2"></div>
-        <div class="viz-label">docker</div>
-      </div>
-      <div>
-        <div class="status-dot on2" style="animation-delay:-1.5s"></div>
-        <div class="viz-label">claude</div>
-      </div>
-      <div>
-        <div class="status-dot mid"></div>
-        <div class="viz-label">mcp</div>
-      </div>
-      <div>
-        <div class="status-dot off"></div>
-        <div class="viz-label">idle</div>
-      </div>
-      <div>
-        <div class="status-dot off"></div>
-        <div class="viz-label">idle</div>
       </div>
     </div>
   </div>
@@ -1137,21 +1007,6 @@
 </footer>
 
 <script>
-  // generate bar charts
-  function makeBars(id, heights) {
-    const col = document.getElementById(id);
-    heights.forEach((h, i) => {
-      const bar = document.createElement('div');
-      bar.className = 'bar';
-      bar.style.height = h + 'px';
-      bar.style.setProperty('--i', i);
-      col.appendChild(bar);
-    });
-  }
-
-  makeBars('bars1', [6,14,9,20,12,7,18,24,10,16,8,22,11,17,13]);
-  makeBars('bars2', [12,7,20,9,15,22,6,18,11,25,8,14,19,7,16]);
-
   function copyText(btn, text) {
     navigator.clipboard.writeText(text).then(() => {
       btn.textContent = 'copied!';
