@@ -117,10 +117,10 @@ function buildRunArgs(
 
   if (opts.mountConfig) {
     const home = process.env.HOME ?? "/root";
+    args.push("-v", `${home}/.claude:/root/.claude:ro`);
     if (opts.patchedSettingsPath) {
       args.push("-v", `${opts.patchedSettingsPath}:/root/.claude/settings.json:ro`);
     }
-    args.push("-v", `${home}/.claude:/root/.claude:ro`);
   }
 
   args.push(opts.tag);
@@ -148,10 +148,10 @@ function buildSessionRunArgs(opts: {
 
   if (opts.mountConfig) {
     const home = process.env.HOME ?? "/root";
+    args.push("-v", `${home}/.claude:/root/.claude:ro`);
     if (opts.patchedSettingsPath) {
       args.push("-v", `${opts.patchedSettingsPath}:/root/.claude/settings.json:ro`);
     }
-    args.push("-v", `${home}/.claude:/root/.claude:ro`);
   }
 
   args.push(opts.tag);

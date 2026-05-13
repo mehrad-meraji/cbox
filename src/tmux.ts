@@ -6,7 +6,7 @@ export function tmuxSessionExists(name: string): boolean {
 }
 
 export function createTmuxSession(sessionName: string, command: string): void {
-  const result = spawnSync("tmux", ["new-session", "-d", "-s", sessionName, command], {
+  const result = spawnSync("tmux", ["new-session", "-d", "-s", sessionName, "bash", "-c", command], {
     stdio: "inherit",
   });
   if (result.status !== 0) {
