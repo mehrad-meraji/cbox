@@ -1,7 +1,7 @@
-import { resolve } from "path";
+import { resolve, basename } from "path";
 import { readFileSync, existsSync } from "fs";
 import { checkApiKey, checkDocker } from "../checks.ts";
-import { imageExists, buildImage, runOneShot } from "../docker.ts";
+import { imageExists, buildImage, runOneShot, type MountSpec } from "../docker.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
 import { patchMcpConfig } from "../mcp.ts";
@@ -11,7 +11,7 @@ export interface RunOptions {
   prompt: string | null;
   file: string | null;
   json: boolean;
-  mount: string | null;
+  mount: string[];
   env: string[];
   noConfig: boolean;
   noBrowser: boolean;
@@ -20,11 +20,25 @@ export interface RunOptions {
 export function parseMountFlag(flag: string): { path: string; mode: "rw" | "ro" } {
   const parts = flag.split(":");
   const mode = parts[parts.length - 1] === "ro" ? "ro" : "rw";
-  // Remove trailing :ro or :rw if present
   const path = parts.length > 1 && (parts[parts.length - 1] === "ro" || parts[parts.length - 1] === "rw")
     ? parts.slice(0, -1).join(":")
     : flag;
   return { path, mode };
+}
+
+export function resolveMounts(mountFlags: string[], defaultMode: "rw" | "ro"): MountSpec[] {
+  const specs: MountSpec[] = [];
+  for (const flag of mountFlags) {
+    const { path, mode } = parseMountFlag(flag);
+    const hostPath = resolve(path);
+    if (!existsSync(hostPath)) {
+      console.error(`cbox: mount path does not exist: ${hostPath}`);
+      process.exit(1);
+    }
+    const containerPath = mountFlags.length === 1 ? "/workspace" : `/workspace/${basename(hostPath)}`;
+    specs.push({ hostPath, containerPath, mode });
+  }
+  return specs;
 }
 
 export async function runCommand(opts: RunOptions): Promise<void> {
@@ -52,26 +66,14 @@ export async function runCommand(opts: RunOptions): Promise<void> {
     buildImage(tag, config.mcpPackages);
   }
 
-  let resolvedMount: string | null = null;
-  let mountMode: "rw" | "ro" = config.defaultMountMode;
-  if (opts.mount) {
-    const parsed = parseMountFlag(opts.mount);
-    resolvedMount = resolve(parsed.path);
-    mountMode = parsed.mode;
-    if (!existsSync(resolvedMount)) {
-      console.error(`cbox: mount path does not exist: ${resolvedMount}`);
-      process.exit(1);
-    }
-  }
-
+  const mounts = resolveMounts(opts.mount, config.defaultMountMode);
   const patchedSettingsPath = opts.noConfig ? null : patchMcpConfig();
 
   const { output, exitCode } = await runOneShot(
     {
       tag,
       prompt,
-      mount: resolvedMount,
-      mountMode,
+      mounts,
       env: opts.env,
       mountConfig: !opts.noConfig,
       patchedSettingsPath,

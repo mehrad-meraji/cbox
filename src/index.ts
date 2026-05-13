@@ -17,7 +17,12 @@ program
 
 function addSharedFlags(cmd: Command): Command {
   return cmd
-    .option("--mount <path>", "mount a host path into the container (append :ro for read-only)")
+    .option(
+      "-m, --mount <path>",
+      "mount a host path into /workspace (repeatable; append :ro for read-only)",
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[]
+    )
     .option(
       "--env <KEY=VALUE>",
       "pass environment variable into container (repeatable)",
@@ -41,7 +46,7 @@ runCmd.action(async (prompt: string | undefined, opts) => {
     prompt: prompt ?? null,
     file: opts.file ?? null,
     json: opts.json ?? false,
-    mount: opts.mount ?? null,
+    mount: opts.mount ?? [],
     env: opts.env ?? [],
     noConfig: !opts.config,
     noBrowser: !opts.browser,
@@ -59,7 +64,7 @@ addSharedFlags(sessionCmd);
 sessionCmd.action(async (opts) => {
   await sessionCommand({
     name: opts.name ?? null,
-    mount: opts.mount ?? null,
+    mount: opts.mount ?? [],
     env: opts.env ?? [],
     noConfig: !opts.config,
     noBrowser: !opts.browser,

@@ -75,11 +75,16 @@ export function stopContainer(name: string): boolean {
   return stop.status === 0;
 }
 
+export interface MountSpec {
+  hostPath: string;
+  containerPath: string;
+  mode: "rw" | "ro";
+}
+
 export interface RunOpts {
   tag: string;
   prompt: string;
-  mount: string | null;
-  mountMode: "rw" | "ro";
+  mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
   patchedSettingsPath: string | null;
@@ -89,7 +94,7 @@ export async function runOneShot(
   opts: RunOpts,
   captureOutput: boolean
 ): Promise<{ output: string; exitCode: number }> {
-  const args = buildRunArgs(opts, null);
+  const args = buildRunArgs(opts);
 
   if (captureOutput) {
     const proc = Bun.spawn(
@@ -100,9 +105,6 @@ export async function runOneShot(
     const exitCode = await proc.exited;
     return { output, exitCode };
   } else {
-    // args is ["run", "--rm", ...flags, tag]
-    // Insert -it after "--rm" so the final command is:
-    //   docker run --rm -it ...flags <image> claude --dangerously-skip-permissions "prompt"
     const argsWithIt = [args[0], args[1], "-it", ...args.slice(2)];
     const proc = Bun.spawn(
       ["docker", ...argsWithIt, "claude", "--dangerously-skip-permissions", opts.prompt],
@@ -116,8 +118,7 @@ export async function runOneShot(
 export function buildDockerSessionCmd(opts: {
   tag: string;
   containerName: string;
-  mount: string | null;
-  mountMode: "rw" | "ro";
+  mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
   patchedSettingsPath: string | null;
@@ -126,21 +127,17 @@ export function buildDockerSessionCmd(opts: {
   return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -it ${args.join(" ")} claude --dangerously-skip-permissions`;
 }
 
-function buildRunArgs(
-  opts: {
-    tag: string;
-    mount: string | null;
-    mountMode: "rw" | "ro";
-    env: string[];
-    mountConfig: boolean;
-    patchedSettingsPath: string | null;
-  },
-  _containerName: null
-): string[] {
+function buildRunArgs(opts: {
+  tag: string;
+  mounts: MountSpec[];
+  env: string[];
+  mountConfig: boolean;
+  patchedSettingsPath: string | null;
+}): string[] {
   const args: string[] = ["run", "--rm", "-e", "ANTHROPIC_API_KEY", "--add-host=host.docker.internal:host-gateway"];
 
-  if (opts.mount) {
-    args.push("-v", `${opts.mount}:/workspace:${opts.mountMode}`);
+  for (const m of opts.mounts) {
+    args.push("-v", `${m.hostPath}:${m.containerPath}:${m.mode}`);
   }
 
   for (const e of opts.env) {
@@ -162,16 +159,15 @@ function buildRunArgs(
 function buildSessionRunArgs(opts: {
   tag: string;
   containerName: string;
-  mount: string | null;
-  mountMode: "rw" | "ro";
+  mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
   patchedSettingsPath: string | null;
 }): string[] {
   const args: string[] = ["--rm", "--name", opts.containerName, "-e", "ANTHROPIC_API_KEY", "--add-host=host.docker.internal:host-gateway"];
 
-  if (opts.mount) {
-    args.push("-v", `${opts.mount}:/workspace:${opts.mountMode}`);
+  for (const m of opts.mounts) {
+    args.push("-v", `${m.hostPath}:${m.containerPath}:${m.mode}`);
   }
 
   for (const e of opts.env) {
