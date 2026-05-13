@@ -15,13 +15,16 @@ pages:
 publish:
   stage: publish
   image: node:20-bookworm-slim
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: https://registry.npmjs.org
   before_script:
     - curl -fsSL https://bun.sh/install | bash
     - export PATH="$HOME/.bun/bin:$PATH"
-    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+    - npm config set //registry.npmjs.org/:_authToken "${NPM_ID_TOKEN}"
   script:
     - bun install --frozen-lockfile
     - bun run build
-    - npm publish --access public
+    - npm publish --access public --provenance
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
