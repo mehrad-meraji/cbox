@@ -48,29 +48,7 @@
       overflow-x: hidden;
     }
 
-    /* dot grid background */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
-      background-size: 28px 28px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* grain overlay */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.5;
-    }
-
-    * { position: relative; z-index: 1; }
+    * { position: relative; }
 
     /* ── NAV ── */
     nav {
@@ -862,9 +840,16 @@
         <span class="screen-dot screen-dot-g"></span>
         <span class="screen-title">sandbox · docker</span>
       </div>
-      <div class="screen-body" style="display:flex;flex-direction:column;justify-content:flex-end;">
-        <div><span class="sc-teal">$</span> <span class="sc-white">cbox run --mount .</span></div>
-        <div style="margin-top:0.2rem"><span class="cursor"></span></div>
+      <div class="screen-body">
+        <div class="sc-dim">// mounting ~/.claude:ro</div>
+        <div class="sc-dim">// patching localhost → host.docker.internal</div>
+        <div>&nbsp;</div>
+        <div><span class="sc-teal">$</span> <span class="sc-white">cbox run --mount . \</span></div>
+        <div style="padding-left:1.4rem"><span class="sc-white">"refactor auth to use JWT"</span></div>
+        <div>&nbsp;</div>
+        <div><span class="sc-amber">▶</span> <span class="sc-text">Reading src/auth.ts</span></div>
+        <div><span class="sc-amber">▶</span> <span class="sc-text">Writing src/auth.ts</span></div>
+        <div><span class="sc-teal">✓</span> <span class="sc-text">Done</span> <span class="cursor"></span></div>
       </div>
     </div>
 
