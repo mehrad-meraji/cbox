@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
-const testDir = join(tmpdir(), "csb-test-mcp-" + process.pid);
+const testDir = join(tmpdir(), "cbox-test-mcp-" + process.pid);
 const claudeDir = join(testDir, ".claude");
 const settingsPath = join(claudeDir, "settings.json");
 

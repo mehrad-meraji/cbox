@@ -19,13 +19,13 @@ export function buildImage(tag: string, mcpPackages: string[]): void {
   }
   args.push(DOCKER_CONTEXT);
 
-  console.log(`csb: building image ${tag}...`);
+  console.log(`cbox: building image ${tag}...`);
   const result = spawnSync("docker", args, { stdio: "inherit" });
   if (result.status !== 0) {
-    console.error("csb: image build failed");
+    console.error("cbox: image build failed");
     process.exit(result.status ?? 1);
   }
-  console.log(`csb: image ${tag} ready`);
+  console.log(`cbox: image ${tag} ready`);
 }
 
 export function isContainerRunning(name: string): boolean {

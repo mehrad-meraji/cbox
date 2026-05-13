@@ -20,7 +20,7 @@ export function patchMcpConfig(): string | null {
       .replace(/localhost/g, "host.docker.internal")
       .replace(/127\.0\.0\.1/g, "host.docker.internal");
 
-    const tmpPath = join(tmpdir(), `csb-settings-${Date.now()}.json`);
+    const tmpPath = join(tmpdir(), `cbox-settings-${Date.now()}.json`);
     writeFileSync(tmpPath, patched);
     return tmpPath;
   } catch {

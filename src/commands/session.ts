@@ -37,25 +37,25 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     resolvedMount = resolve(parsed.path);
     mountMode = parsed.mode;
     if (!existsSync(resolvedMount)) {
-      console.error(`csb: mount path does not exist: ${resolvedMount}`);
+      console.error(`cbox: mount path does not exist: ${resolvedMount}`);
       process.exit(1);
     }
   }
 
   let id = generateId();
-  let tmuxSession = `csb-${id}`;
+  let tmuxSession = `cbox-${id}`;
 
   // Retry once on name collision
   if (tmuxSessionExists(tmuxSession)) {
     id = generateId();
-    tmuxSession = `csb-${id}`;
+    tmuxSession = `cbox-${id}`;
   }
 
   const patchedSettingsPath = opts.noConfig ? null : patchMcpConfig();
 
   const dockerCmd = buildDockerSessionCmd({
     tag,
-    containerName: `csb-${id}`,
+    containerName: `cbox-${id}`,
     mount: resolvedMount,
     mountMode,
     env: opts.env,
@@ -69,12 +69,12 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     id,
     name: opts.name,
     tmuxSession,
-    containerName: `csb-${id}`,
+    containerName: `cbox-${id}`,
     mount: resolvedMount,
     mountMode: resolvedMount ? mountMode : null,
     createdAt: new Date().toISOString(),
   });
 
-  console.log(`csb: session ${id}${opts.name ? ` (${opts.name})` : ""} started`);
+  console.log(`cbox: session ${id}${opts.name ? ` (${opts.name})` : ""} started`);
   attachTmuxSession(tmuxSession);
 }

@@ -11,7 +11,7 @@ import { version } from "../package.json";
 const program = new Command();
 
 program
-  .name("csb")
+  .name("cbox")
   .description("Claude Sandbox CLI — run Claude Code in Docker")
   .version(version);
 
@@ -28,7 +28,7 @@ function addSharedFlags(cmd: Command): Command {
     .option("--no-browser", "accepted for future slim image variant (no-op in v1)");
 }
 
-// csb run (explicit subcommand, also default)
+// cbox run (explicit subcommand, also default)
 const runCmd = new Command("run")
   .description("run a one-shot prompt in a throwaway container")
   .argument("[prompt]", "prompt string (or use -f)")
@@ -50,7 +50,7 @@ runCmd.action(async (prompt: string | undefined, opts) => {
 
 program.addCommand(runCmd, { isDefault: true });
 
-// csb session
+// cbox session
 const sessionCmd = new Command("session")
   .description("start a persistent interactive Claude Code session")
   .option("--name <name>", "name the session for easy reattachment");
@@ -68,19 +68,19 @@ sessionCmd.action(async (opts) => {
 
 program.addCommand(sessionCmd);
 
-// csb list
+// cbox list
 program
   .command("list")
   .description("list active sessions")
   .action(() => listCommand());
 
-// csb attach
+// cbox attach
 program
   .command("attach <idOrName>")
   .description("reattach to a running session")
   .action((idOrName: string) => attachCommand(idOrName));
 
-// csb kill
+// cbox kill
 program
   .command("kill [idOrName]")
   .description("stop a session and clean up")
@@ -89,7 +89,7 @@ program
     killCommand(idOrName ?? null, opts.all ?? false);
   });
 
-// csb build
+// cbox build
 program
   .command("build")
   .description("force rebuild the Docker image")

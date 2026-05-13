@@ -10,5 +10,5 @@ export function mcpHash(packages: string[]): string {
 
 export function imageTag(version: string, packages: string[]): string {
   const hash = mcpHash(packages);
-  return hash ? `csb:${version}-${hash}` : `csb:${version}`;
+  return hash ? `cbox:${version}-${hash}` : `cbox:${version}`;
 }

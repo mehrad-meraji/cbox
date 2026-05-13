@@ -20,11 +20,11 @@ describe("mcpHash", () => {
 
 describe("imageTag", () => {
   test("returns version-only tag when no packages", () => {
-    expect(imageTag("1.0.0", [])).toBe("csb:1.0.0");
+    expect(imageTag("1.0.0", [])).toBe("cbox:1.0.0");
   });
 
   test("returns version-hash tag when packages present", () => {
     const tag = imageTag("1.0.0", ["some-pkg"]);
-    expect(tag).toMatch(/^csb:1\.0\.0-[0-9a-f]{8}$/);
+    expect(tag).toMatch(/^cbox:1\.0\.0-[0-9a-f]{8}$/);
   });
 });

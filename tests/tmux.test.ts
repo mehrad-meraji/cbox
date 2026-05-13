@@ -13,7 +13,7 @@ describe("tmux module exports", () => {
   test("tmuxSessionExists returns boolean", async () => {
     const { tmuxSessionExists } = await import("../src/tmux.ts");
     // Test with a name that definitely doesn't exist
-    const result = tmuxSessionExists("csb-nonexistent-session-xyz-" + Date.now());
+    const result = tmuxSessionExists("cbox-nonexistent-session-xyz-" + Date.now());
     expect(typeof result).toBe("boolean");
     expect(result).toBe(false);
   });

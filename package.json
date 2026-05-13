@@ -1,13 +1,13 @@
 {
-  "name": "csb",
+  "name": "cbox",
   "version": "0.1.0",
   "description": "Claude Sandbox CLI — run Claude Code in Docker",
   "bin": {
-    "csb": "./dist/csb"
+    "cbox": "./dist/cbox"
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile dist/csb",
+    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile dist/cbox",
     "test": "bun test"
   },
   "dependencies": {

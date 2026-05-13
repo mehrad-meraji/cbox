@@ -15,7 +15,7 @@ const DEFAULTS: Config = {
 };
 
 function configDir(): string {
-  return process.env.CSB_CONFIG_DIR ?? join(homedir(), ".config", "csb");
+  return process.env.CBOX_CONFIG_DIR ?? join(homedir(), ".config", "cbox");
 }
 
 function configPath(): string {

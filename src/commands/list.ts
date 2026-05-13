@@ -20,7 +20,7 @@ export function listCommand(): void {
   }
 
   if (live.length === 0) {
-    console.log("No active sessions. Start one with: csb session");
+    console.log("No active sessions. Start one with: cbox session");
     return;
   }
 

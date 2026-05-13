@@ -19,7 +19,7 @@ interface Registry {
 }
 
 function configDir(): string {
-  return process.env.CSB_CONFIG_DIR ?? join(homedir(), ".config", "csb");
+  return process.env.CBOX_CONFIG_DIR ?? join(homedir(), ".config", "cbox");
 }
 
 function sessionsPath(): string {
@@ -32,7 +32,7 @@ function read(): Registry {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
   } catch {
-    console.warn("csb: sessions registry corrupted, resetting");
+    console.warn("cbox: sessions registry corrupted, resetting");
     return { version: 1, sessions: [] };
   }
 }

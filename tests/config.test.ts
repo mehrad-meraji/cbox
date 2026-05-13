@@ -3,14 +3,14 @@ import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
-const testDir = join(tmpdir(), "csb-test-config-" + process.pid);
+const testDir = join(tmpdir(), "cbox-test-config-" + process.pid);
 
 beforeEach(() => mkdirSync(testDir, { recursive: true }));
 afterEach(() => rmSync(testDir, { recursive: true, force: true }));
 
 describe("loadConfig", () => {
   test("returns defaults when file is missing", async () => {
-    process.env.CSB_CONFIG_DIR = testDir;
+    process.env.CBOX_CONFIG_DIR = testDir;
     const { loadConfig } = await import("../src/config.ts");
     const config = loadConfig();
     expect(config.defaultMountMode).toBe("rw");
@@ -19,7 +19,7 @@ describe("loadConfig", () => {
   });
 
   test("merges file values over defaults", async () => {
-    process.env.CSB_CONFIG_DIR = testDir;
+    process.env.CBOX_CONFIG_DIR = testDir;
     writeFileSync(join(testDir, "config.json"), JSON.stringify({ terminalApp: "iTerm" }));
     const { loadConfig } = await import("../src/config.ts?v=2");
     const config = loadConfig();
@@ -28,7 +28,7 @@ describe("loadConfig", () => {
   });
 
   test("returns defaults when file is corrupt JSON", async () => {
-    process.env.CSB_CONFIG_DIR = testDir;
+    process.env.CBOX_CONFIG_DIR = testDir;
     writeFileSync(join(testDir, "config.json"), "not valid json {{");
     const { loadConfig } = await import("../src/config.ts?v=3");
     const config = loadConfig();
@@ -36,7 +36,7 @@ describe("loadConfig", () => {
   });
 
   test("saveConfig writes config and loadConfig reads it back", async () => {
-    process.env.CSB_CONFIG_DIR = testDir;
+    process.env.CBOX_CONFIG_DIR = testDir;
     const { saveConfig, loadConfig } = await import("../src/config.ts?v=4");
     saveConfig({ defaultMountMode: "ro", terminalApp: "iTerm", mcpPackages: ["some-pkg"] });
     const loaded = loadConfig();

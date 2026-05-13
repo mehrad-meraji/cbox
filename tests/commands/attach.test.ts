@@ -8,7 +8,7 @@ describe("attachCommand", () => {
   });
 
   test("exits with 1 when session not found", async () => {
-    process.env.CSB_CONFIG_DIR = tmpdir() + "/csb-attach-test-" + Date.now();
+    process.env.CBOX_CONFIG_DIR = tmpdir() + "/cbox-attach-test-" + Date.now();
     const { attachCommand } = await import("../../src/commands/attach.ts?v=2");
     const exitSpy = spyOn(process, "exit").mockImplementation((() => {
       throw new Error("process.exit called");

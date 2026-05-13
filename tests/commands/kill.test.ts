@@ -18,7 +18,7 @@ describe("killCommand", () => {
   });
 
   test("exits with 1 when session not found", async () => {
-    process.env.CSB_CONFIG_DIR = tmpdir() + "/csb-kill-test-" + Date.now();
+    process.env.CBOX_CONFIG_DIR = tmpdir() + "/cbox-kill-test-" + Date.now();
     const { killCommand } = await import("../../src/commands/kill.ts?v=3");
     const exitSpy = spyOn(process, "exit").mockImplementation((() => {
       throw new Error("process.exit called");
@@ -29,7 +29,7 @@ describe("killCommand", () => {
   });
 
   test("--all with no sessions prints message", async () => {
-    process.env.CSB_CONFIG_DIR = tmpdir() + "/csb-kill-all-test-" + Date.now();
+    process.env.CBOX_CONFIG_DIR = tmpdir() + "/cbox-kill-all-test-" + Date.now();
     const { killCommand } = await import("../../src/commands/kill.ts?v=4");
     const logs: string[] = [];
     const orig = console.log;

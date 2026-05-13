@@ -6,18 +6,18 @@ import type { Session } from "../registry.ts";
 function killOne(session: Session): void {
   const stopped = stopContainer(session.containerName);
   if (!stopped) {
-    console.warn(`csb: warning — could not stop container ${session.containerName} (may already be stopped)`);
+    console.warn(`cbox: warning — could not stop container ${session.containerName} (may already be stopped)`);
   }
   killTmuxSession(session.tmuxSession);
   removeSession(session.id);
-  console.log(`csb: killed session ${session.id}${session.name ? ` (${session.name})` : ""}`);
+  console.log(`cbox: killed session ${session.id}${session.name ? ` (${session.name})` : ""}`);
 }
 
 export function killCommand(idOrName: string | null, all: boolean): void {
   if (all) {
     const sessions = getSessions();
     if (sessions.length === 0) {
-      console.log("csb: no active sessions");
+      console.log("cbox: no active sessions");
       return;
     }
     for (const s of sessions) killOne(s);
@@ -25,13 +25,13 @@ export function killCommand(idOrName: string | null, all: boolean): void {
   }
 
   if (!idOrName) {
-    console.error("csb: provide a session id/name or use --all");
+    console.error("cbox: provide a session id/name or use --all");
     process.exit(1);
   }
 
   const session = findSession(idOrName);
   if (!session) {
-    console.error(`csb: session not found: ${idOrName}\nRun 'csb list' to see active sessions.`);
+    console.error(`cbox: session not found: ${idOrName}\nRun 'cbox list' to see active sessions.`);
     process.exit(1);
   }
   killOne(session);

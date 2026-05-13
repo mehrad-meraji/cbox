@@ -4,7 +4,7 @@ import { imageTag } from "../src/image.ts";
 // Smoke test: imageTag integration (pure function, no mocking needed)
 describe("imageTag integration", () => {
   test("produces correct tag for no packages", () => {
-    expect(imageTag("0.1.0", [])).toBe("csb:0.1.0");
+    expect(imageTag("0.1.0", [])).toBe("cbox:0.1.0");
   });
 });
 

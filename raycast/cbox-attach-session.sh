@@ -3,7 +3,7 @@
 # @raycast.schemaVersion 1
 # @raycast.title CSB Attach Session
 # @raycast.mode silent
-# @raycast.packageName csb
+# @raycast.packageName cbox
 # @raycast.description Attach to a Claude Sandbox session in a new terminal window
 # @raycast.argument1 { "type": "text", "placeholder": "Session ID or name" }
 
@@ -17,7 +17,7 @@ fi
 
 TERM_APP=$(python3 -c "
 import json, os
-cfg = os.path.expanduser('~/.config/csb/config.json')
+cfg = os.path.expanduser('~/.config/cbox/config.json')
 try:
     with open(cfg) as f:
         data = json.load(f)
@@ -30,12 +30,12 @@ if [ "$TERM_APP" = "iTerm" ]; then
   osascript -e "tell application \"iTerm\"
     create window with default profile
     tell current session of current window
-      write text \"csb attach $SESSION\"
+      write text \"cbox attach $SESSION\"
     end tell
   end tell"
 else
   osascript -e "tell application \"Terminal\"
-    do script \"csb attach $SESSION\"
+    do script \"cbox attach $SESSION\"
     activate
   end tell"
 fi

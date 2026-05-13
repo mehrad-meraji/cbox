@@ -34,14 +34,14 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   let prompt = opts.prompt;
   if (opts.file) {
     if (!existsSync(opts.file)) {
-      console.error(`csb: file not found: ${opts.file}`);
+      console.error(`cbox: file not found: ${opts.file}`);
       process.exit(1);
     }
     prompt = readFileSync(opts.file, "utf8").trim();
   }
 
   if (!prompt) {
-    console.error("csb: provide a prompt or use -f <file>");
+    console.error("cbox: provide a prompt or use -f <file>");
     process.exit(1);
   }
 
@@ -59,7 +59,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
     resolvedMount = resolve(parsed.path);
     mountMode = parsed.mode;
     if (!existsSync(resolvedMount)) {
-      console.error(`csb: mount path does not exist: ${resolvedMount}`);
+      console.error(`cbox: mount path does not exist: ${resolvedMount}`);
       process.exit(1);
     }
   }

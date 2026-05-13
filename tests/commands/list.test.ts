@@ -10,8 +10,8 @@ describe("listCommand exports", () => {
 
 describe("age helper (via observable behavior)", () => {
   test("listCommand runs without throwing on empty registry", async () => {
-    // We can test behavior without mocking by using CSB_CONFIG_DIR
-    process.env.CSB_CONFIG_DIR = tmpdir() + "/csb-list-test-" + Date.now();
+    // We can test behavior without mocking by using CBOX_CONFIG_DIR
+    process.env.CBOX_CONFIG_DIR = tmpdir() + "/cbox-list-test-" + Date.now();
     const { listCommand } = await import("../../src/commands/list.ts?v=2");
     const logs: string[] = [];
     const orig = console.log;

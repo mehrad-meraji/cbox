@@ -1,4 +1,4 @@
-# csb — Claude Sandbox CLI
+# cbox — Claude Sandbox CLI
 
 Run Claude Code in a throwaway Docker container. One-shot automation or persistent interactive sessions that survive terminal disconnects.
 
@@ -11,24 +11,24 @@ Run Claude Code in a throwaway Docker container. One-shot automation or persiste
 ## Install
 
 ```sh
-bun install -g csb     # global install
-bunx csb               # no-install, always latest
+bun install -g cbox     # global install
+bunx cbox               # no-install, always latest
 ```
 
 ## Quick Start
 
 ```sh
 # One-shot: run a prompt and stream output
-csb "refactor the auth module to use JWT"
+cbox "refactor the auth module to use JWT"
 
 # Interactive: persistent Claude Code session
-csb session --mount .
+cbox session --mount .
 
 # Mount current directory and run a task from a file
-csb run -f task.md --mount .
+cbox run -f task.md --mount .
 
 # JSON output for scripting
-csb run -j "list all TODO comments" --mount ./src
+cbox run -j "list all TODO comments" --mount ./src
 ```
 
 ## Commands
@@ -36,15 +36,15 @@ csb run -j "list all TODO comments" --mount ./src
 ### One-shot mode
 
 ```sh
-csb "<prompt>"                        # implicit run
-csb run "<prompt>"                    # explicit (same behaviour)
-csb run -f task.md                    # prompt from file
-csb run -j "<prompt>"                 # JSON output
-csb run --mount . "<prompt>"          # mount cwd read-write
-csb run --mount ./src:ro "<prompt>"   # mount read-only
-csb run --env KEY=VALUE "<prompt>"    # pass env var into container
-csb run --no-config "<prompt>"        # skip mounting ~/.claude
-csb run --no-browser "<prompt>"       # skip agent-browser (lighter image)
+cbox "<prompt>"                        # implicit run
+cbox run "<prompt>"                    # explicit (same behaviour)
+cbox run -f task.md                    # prompt from file
+cbox run -j "<prompt>"                 # JSON output
+cbox run --mount . "<prompt>"          # mount cwd read-write
+cbox run --mount ./src:ro "<prompt>"   # mount read-only
+cbox run --env KEY=VALUE "<prompt>"    # pass env var into container
+cbox run --no-config "<prompt>"        # skip mounting ~/.claude
+cbox run --no-browser "<prompt>"       # skip agent-browser (lighter image)
 ```
 
 Streams Claude Code's stdout/stderr directly. Exits with the container's exit code.
@@ -52,32 +52,32 @@ Streams Claude Code's stdout/stderr directly. Exits with the container's exit co
 ### Interactive session mode
 
 ```sh
-csb session                           # start interactive session
-csb session --mount .                 # mount cwd read-write
-csb session --mount ./src:ro          # mount read-only
-csb session --name refactor-auth      # named session
-csb session --env KEY=VALUE           # pass env var
-csb session --no-config               # skip mounting ~/.claude
-csb session --no-browser              # lighter container
+cbox session                           # start interactive session
+cbox session --mount .                 # mount cwd read-write
+cbox session --mount ./src:ro          # mount read-only
+cbox session --name refactor-auth      # named session
+cbox session --env KEY=VALUE           # pass env var
+cbox session --no-config               # skip mounting ~/.claude
+cbox session --no-browser              # lighter container
 ```
 
-Creates a tmux session on the host, starts Docker inside it. Attaching/detaching from tmux leaves the container running. Reconnect anytime with `csb attach`.
+Creates a tmux session on the host, starts Docker inside it. Attaching/detaching from tmux leaves the container running. Reconnect anytime with `cbox attach`.
 
 ### Session management
 
 ```sh
-csb list                              # list active sessions
-csb attach <id|name>                  # reattach to a session
-csb kill <id|name>                    # stop container + tmux + prune registry
-csb kill --all                        # kill everything
+cbox list                              # list active sessions
+cbox attach <id|name>                  # reattach to a session
+cbox kill <id|name>                    # stop container + tmux + prune registry
+cbox kill --all                        # kill everything
 ```
 
-`csb list` cross-references live sessions against `docker ps` and automatically prunes dead entries.
+`cbox list` cross-references live sessions against `docker ps` and automatically prunes dead entries.
 
 ### Image management
 
 ```sh
-csb build                             # force rebuild Docker image
+cbox build                             # force rebuild Docker image
 ```
 
 The image is built automatically on first run and cached. It rebuilds when the CLI version changes or `mcpPackages` in config changes.
@@ -98,9 +98,9 @@ The image is built automatically on first run and cached. It rebuilds when the C
 `--mount .` resolves to the absolute path of your cwd at invocation time and mounts it as `-v /abs/path:/workspace:rw` inside the container. All mounts land at `/workspace`.
 
 ```sh
-csb run --mount .            # /workspace = cwd (read-write)
-csb run --mount ./src:ro     # /workspace = ./src (read-only)
-csb run --mount /abs/path    # /workspace = /abs/path (read-write)
+cbox run --mount .            # /workspace = cwd (read-write)
+cbox run --mount ./src:ro     # /workspace = ./src (read-only)
+cbox run --mount /abs/path    # /workspace = /abs/path (read-write)
 ```
 
 ## Tools Inside the Container
@@ -137,7 +137,7 @@ Always valid JSON — safe to pipe into `jq`.
 
 ## Configuration
 
-`~/.config/csb/config.json`:
+`~/.config/cbox/config.json`:
 
 ```json
 {
@@ -157,7 +157,7 @@ Adding or removing a package in `mcpPackages` triggers an automatic image rebuil
 
 ## Session Registry
 
-Active sessions are tracked at `~/.config/csb/sessions.json`. Each session entry records its ID, name, tmux session name, container name, mount path, and creation time. Writes are atomic (temp file + rename).
+Active sessions are tracked at `~/.config/cbox/sessions.json`. Each session entry records its ID, name, tmux session name, container name, mount path, and creation time. Writes are atomic (temp file + rename).
 
 ## Raycast Integration
 
@@ -165,20 +165,20 @@ Four Script Commands live in `raycast/`:
 
 | Script | Behaviour |
 |---|---|
-| `csb-list-sessions.sh` | Searchable list of active sessions |
-| `csb-attach-session.sh` | Opens Terminal and runs `csb attach <id>` |
-| `csb-kill-session.sh` | Runs `csb kill <id>` with confirmation |
-| `csb-run-prompt.sh` | Runs `csb run -j "<input>"`, shows output inline |
+| `cbox-list-sessions.sh` | Searchable list of active sessions |
+| `cbox-attach-session.sh` | Opens Terminal and runs `cbox attach <id>` |
+| `cbox-kill-session.sh` | Runs `cbox kill <id>` with confirmation |
+| `cbox-run-prompt.sh` | Runs `cbox run -j "<input>"`, shows output inline |
 
-Copy the scripts into your Raycast Script Commands directory. The terminal app used by `csb-attach-session.sh` is configurable via `terminalApp` in config.
+Copy the scripts into your Raycast Script Commands directory. The terminal app used by `cbox-attach-session.sh` is configurable via `terminalApp` in config.
 
 ## MCP Servers
 
-**Network MCP servers** (configured with `localhost`/`127.0.0.1` URLs) are reachable from inside the container — csb patches the config transparently at runtime, replacing those URLs with `host.docker.internal`. The host config is never modified; the patched copy lives in a temp file for the duration of the run.
+**Network MCP servers** (configured with `localhost`/`127.0.0.1` URLs) are reachable from inside the container — cbox patches the config transparently at runtime, replacing those URLs with `host.docker.internal`. The host config is never modified; the patched copy lives in a temp file for the duration of the run.
 
-Network MCP servers must already be running on the host before invoking `csb`.
+Network MCP servers must already be running on the host before invoking `cbox`.
 
-**Local process MCP servers** run inside the container as Claude Code child processes. Install them by adding their npm package names to `mcpPackages` in config and running `csb build`.
+**Local process MCP servers** run inside the container as Claude Code child processes. Install them by adding their npm package names to `mcpPackages` in config and running `cbox build`.
 
 ## Security
 
@@ -188,16 +188,16 @@ Network MCP servers must already be running on the host before invoking `csb`.
 
 ## Docker Image
 
-Based on `node:20-bookworm-slim` with Chrome dependencies for headless browser support. Images are tagged `csb:<version>` or `csb:<version>-<mcpHash>`.
+Based on `node:20-bookworm-slim` with Chrome dependencies for headless browser support. Images are tagged `cbox:<version>` or `cbox:<version>-<mcpHash>`.
 
 Old images are left in place after upgrades. Clean them up with `docker image prune`.
 
 ## Building from Source
 
 ```sh
-git clone https://github.com/mehrad/csb
-cd csb
+git clone https://github.com/mehrad/cbox
+cd cbox
 bun install
-bun run build        # produces dist/csb
+bun run build        # produces dist/cbox
 bun test             # run test suite
 ```
