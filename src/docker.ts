@@ -5,9 +5,9 @@ import { join } from "path";
 
 const DOCKERFILE_CONTENT = `FROM node:20-bookworm-slim
 
-# Chrome dependencies for agent-browser
+# System Chromium + dependencies (works on both x86_64 and ARM64)
 RUN apt-get update && apt-get install -y \\
-    wget gnupg ca-certificates fonts-liberation \\
+    chromium wget gnupg ca-certificates fonts-liberation \\
     libappindicator3-1 libasound2 libatk-bridge2.0-0 \\
     libatk1.0-0 libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 \\
     libnspr4 libnss3 libx11-xcb1 libxcomposite1 \\
@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \\
 # Core tools
 RUN npm install -g @anthropic-ai/claude-code agent-browser
 
-# Download Chrome for agent-browser
-RUN agent-browser install
+# Point agent-browser at system Chromium (avoids arch-specific Chrome for Testing)
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Local MCP packages (space-separated list injected at build time)
 ARG MCP_PACKAGES=""
