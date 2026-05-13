@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cbox — Claude Sandbox CLI</title>
+  <meta name="description" content="Run Claude Code in a throwaway Docker container. One-shot automation or persistent interactive sessions that survive terminal disconnects.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0e1117;
+      --bg2:       #161b22;
+      --bg3:       #1c2333;
+      --border:    #30363d;
+      --green:     #3fb950;
+      --green-dim: #238636;
+      --amber:     #e3b341;
+      --blue:      #58a6ff;
+      --text:      #c9d1d9;
+      --text-dim:  #8b949e;
+      --white:     #f0f6fc;
+      --radius:    6px;
+      --mono: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(14, 17, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--white);
+      text-decoration: none;
+    }
+
+    .nav-logo span { color: var(--green); }
+
+    .nav-links { display: flex; gap: 1.5rem; }
+
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color .15s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 6rem 2rem 4rem;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--green);
+      background: rgba(63, 185, 80, 0.1);
+      border: 1px solid rgba(63, 185, 80, 0.25);
+      border-radius: 100px;
+      padding: 0.2rem 0.75rem;
+      margin-bottom: 1.5rem;
+      letter-spacing: .04em;
+    }
+
+    .hero h1 {
+      font-family: var(--mono);
+      font-size: clamp(2.5rem, 7vw, 4rem);
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -.02em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+
+    .hero h1 span { color: var(--green); }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--text-dim);
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* Install bar */
+    .install-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.7rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    .install-bar .prompt { color: var(--green); user-select: none; }
+    .install-bar .cmd { color: var(--white); }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.55rem;
+      transition: all .15s;
+      font-family: var(--sans);
+    }
+
+    .copy-btn:hover { color: var(--text); border-color: var(--text-dim); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    .install-alt {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    .install-alt span { color: var(--text-dim); }
+
+    /* ── Terminal window ── */
+    .terminal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .terminal-bar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .terminal-title {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .terminal-body {
+      padding: 1.25rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.875rem;
+      line-height: 1.7;
+    }
+
+    .t-prompt { color: var(--green); }
+    .t-cmd    { color: var(--white); }
+    .t-out    { color: var(--text-dim); }
+    .t-info   { color: var(--blue); }
+    .t-good   { color: var(--green); }
+    .t-warn   { color: var(--amber); }
+    .t-blank  { display: block; height: 0.4rem; }
+
+    /* ── Sections ── */
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .section h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-lead {
+      color: var(--text-dim);
+      max-width: 540px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── Modes ── */
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .mode-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color .2s;
+    }
+
+    .mode-card:hover { border-color: var(--green-dim); }
+
+    .mode-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .mode-card h3 {
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: var(--white);
+      margin-bottom: 0.4rem;
+    }
+
+    .mode-card p {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .mode-example {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+
+    .mode-example .t-prompt { color: var(--green); }
+
+    /* ── Features grid ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .feature {
+      padding: 1.25rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .feature-icon {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 0.3rem;
+    }
+
+    .feature p {
+      font-size: 0.83rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 2rem;
+    }
+
+    /* ── Command table ── */
+    .cmd-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    .cmd-table th {
+      text-align: left;
+      color: var(--text-dim);
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cmd-table td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+      vertical-align: top;
+    }
+
+    .cmd-table tr:last-child td { border-bottom: none; }
+    .cmd-table td:first-child { color: var(--blue); white-space: nowrap; }
+    .cmd-table td:last-child { color: var(--text-dim); font-family: var(--sans); font-size: 0.82rem; }
+
+    .table-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: auto;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    footer a { color: var(--text-dim); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+    footer .sep { margin: 0 0.75rem; opacity: 0.3; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .hero { padding: 4rem 1.5rem 3rem; }
+      .section { padding: 3.5rem 1.5rem; }
+      .install-bar { flex-wrap: wrap; }
+      nav { padding: 0 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#"><span>c</span>box</a>
+  <div class="nav-links">
+    <a href="#modes">Modes</a>
+    <a href="#commands">Commands</a>
+    <a href="#features">Features</a>
+    <a href="https://gitlab.com/mehrad.meraji/cbox" target="_blank" rel="noopener">GitLab</a>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-badge">v0.1.0 · Docker + Claude Code</div>
+
+  <h1><span>c</span>box</h1>
+
+  <p class="hero-sub">
+    Run Claude Code in a throwaway Docker container.
+    One-shot automation or persistent sessions that survive terminal disconnects.
+  </p>
+
+  <div class="install-bar">
+    <span class="prompt">$</span>
+    <span class="cmd">bun install -g cbox</span>
+    <button class="copy-btn" onclick="copyInstall(this)">copy</button>
+  </div>
+  <br>
+  <span class="install-alt">or run without installing: <code>bunx cbox</code></span>
+</section>
+
+<!-- ── Demo terminal ── -->
+<div style="max-width:720px;margin:0 auto 5rem;padding:0 2rem;">
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="dot dot-r"></span>
+      <span class="dot dot-y"></span>
+      <span class="dot dot-g"></span>
+      <span class="terminal-title">bash</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-prompt">$ </span><span class="t-cmd">cbox run --mount . "add unit tests for the auth module"</span></div>
+      <div class="t-info">cbox: building image cbox:0.1.0... (first run, ~60s)</div>
+      <span class="t-blank"></span>
+      <div class="t-out">✓ Reading auth.ts</div>
+      <div class="t-out">✓ Writing tests/auth.test.ts (12 tests)</div>
+      <div class="t-out">✓ All tests passing</div>
+      <span class="t-blank"></span>
+      <div><span class="t-good">Done in 23s · exit 0</span></div>
+      <span class="t-blank"></span>
+      <div><span class="t-prompt">$ </span><span class="t-cmd">cbox session --mount . --name refactor-auth</span></div>
+      <div class="t-info">cbox: session a3f91b (refactor-auth) started</div>
+      <div class="t-out"># Claude Code is now running interactively inside Docker</div>
+      <div class="t-out"># Detach from tmux anytime — session survives terminal close</div>
+      <div class="t-out"># Reattach later with: cbox attach refactor-auth</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── Modes ── -->
+<section class="section" id="modes">
+  <div class="section-label">Two modes</div>
+  <h2>Pick your workflow</h2>
+  <p class="section-lead">Use one-shot mode for automation and scripting, or drop into an interactive session for longer work.</p>
+
+  <div class="modes">
+    <div class="mode-card">
+      <div class="mode-icon">⚡</div>
+      <h3>cbox run</h3>
+      <p>Fire a prompt, stream the output, exit with the container's exit code. Pipe it, script it, automate it.</p>
+      <div class="mode-example">
+        <div><span class="t-prompt">$ </span>cbox run "refactor auth to JWT"</div>
+        <div><span class="t-prompt">$ </span>cbox run -j "find TODOs" | jq</div>
+        <div><span class="t-prompt">$ </span>cbox run -f task.md --mount ./src</div>
+      </div>
+    </div>
+
+    <div class="mode-card">
+      <div class="mode-icon">🖥</div>
+      <h3>cbox session</h3>
+      <p>Interactive Claude Code session backed by tmux on the host. Disconnect and reconnect anytime.</p>
+      <div class="mode-example">
+        <div><span class="t-prompt">$ </span>cbox session --name my-task</div>
+        <div><span class="t-prompt">$ </span>cbox list</div>
+        <div><span class="t-prompt">$ </span>cbox attach my-task</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── Commands ── -->
+<section class="section" id="commands">
+  <div class="section-label">Reference</div>
+  <h2>Commands &amp; flags</h2>
+  <p class="section-lead">Everything runs through the <code style="font-family:var(--mono);color:var(--blue);font-size:0.9em">cbox</code> binary.</p>
+
+  <div class="table-wrap" style="margin-bottom:1.5rem;">
+    <table class="cmd-table">
+      <tr><th>Command</th><th>Description</th></tr>
+      <tr><td>cbox "&lt;prompt&gt;"</td><td>One-shot run (implicit)</td></tr>
+      <tr><td>cbox run "&lt;prompt&gt;"</td><td>One-shot run (explicit)</td></tr>
+      <tr><td>cbox run -f task.md</td><td>Prompt from file</td></tr>
+      <tr><td>cbox run -j "&lt;prompt&gt;"</td><td>JSON output envelope</td></tr>
+      <tr><td>cbox session</td><td>Start interactive session</td></tr>
+      <tr><td>cbox session --name &lt;n&gt;</td><td>Named session</td></tr>
+      <tr><td>cbox list</td><td>List active sessions</td></tr>
+      <tr><td>cbox attach &lt;id|name&gt;</td><td>Reattach to a session</td></tr>
+      <tr><td>cbox kill &lt;id|name&gt;</td><td>Kill session + container</td></tr>
+      <tr><td>cbox kill --all</td><td>Kill all sessions</td></tr>
+      <tr><td>cbox build</td><td>Force rebuild Docker image</td></tr>
+    </table>
+  </div>
+
+  <div class="table-wrap">
+    <table class="cmd-table">
+      <tr><th>Flag</th><th>Description</th></tr>
+      <tr><td>--mount &lt;path&gt;</td><td>Mount host path into /workspace (read-write)</td></tr>
+      <tr><td>--mount &lt;path&gt;:ro</td><td>Mount read-only</td></tr>
+      <tr><td>--env KEY=VALUE</td><td>Pass environment variable into container (repeatable)</td></tr>
+      <tr><td>--no-config</td><td>Skip mounting ~/.claude (full isolation)</td></tr>
+      <tr><td>--no-browser</td><td>Skip agent-browser for a lighter container</td></tr>
+    </table>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── Features ── -->
+<section class="section" id="features">
+  <div class="section-label">Features</div>
+  <h2>What's inside</h2>
+  <p class="section-lead">cbox is a thin coordinator — Docker, tmux, and Claude Code do the heavy lifting.</p>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🐳</div>
+      <h4>Docker isolation</h4>
+      <p>Every run is a throwaway container. Nothing leaks to your host filesystem unless you mount it.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔄</div>
+      <h4>tmux persistence</h4>
+      <p>Sessions survive terminal disconnects via host-side tmux. Reattach by name or ID anytime.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🌐</div>
+      <h4>MCP servers</h4>
+      <p>Host skills and MCP config mounted read-only. localhost URLs rewritten to host.docker.internal automatically.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🖥</div>
+      <h4>agent-browser</h4>
+      <p>Chrome baked into the image. Headless browser automation available inside every container.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📋</div>
+      <h4>JSON output</h4>
+      <p>Use <code style="font-family:var(--mono);font-size:0.85em">-j</code> to get structured output — always valid JSON, even on failure. Safe to pipe into jq.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🚀</div>
+      <h4>Raycast integration</h4>
+      <p>Script Commands for listing, attaching, killing sessions, and running prompts — without a terminal.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔑</div>
+      <h4>Secure by design</h4>
+      <p>API key passed by reference, never embedded. ~/.claude mounted read-only. MCP patches go to tmpdir.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📦</div>
+      <h4>Zero config</h4>
+      <p>Image builds automatically on first run. Rebuilds only when CLI version or MCP packages change.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── Install CTA ── -->
+<section class="section" style="text-align:center;padding-bottom:6rem;">
+  <h2 style="margin-bottom:0.5rem;">Get started</h2>
+  <p style="color:var(--text-dim);margin-bottom:2rem;">Requires Docker, tmux, and <code style="font-family:var(--mono);font-size:0.9em;color:var(--blue)">ANTHROPIC_API_KEY</code></p>
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;">
+    <div class="install-bar">
+      <span class="prompt">$</span>
+      <span class="cmd">bun install -g cbox</span>
+      <button class="copy-btn" onclick="copyInstall(this)">copy</button>
+    </div>
+    <a href="https://gitlab.com/mehrad.meraji/cbox"
+       target="_blank" rel="noopener"
+       style="color:var(--text-dim);text-decoration:none;font-size:0.9rem;border:1px solid var(--border);padding:0.5rem 1.25rem;border-radius:var(--radius);transition:all .15s;"
+       onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-dim)'"
+       onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">
+      View source on GitLab →
+    </a>
+  </div>
+</section>
+
+<footer>
+  <a href="https://gitlab.com/mehrad.meraji/cbox" target="_blank" rel="noopener">GitLab</a>
+  <span class="sep">|</span>
+  <a href="https://gitlab.com/mehrad.meraji/cbox/-/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
+  <span class="sep">|</span>
+  <span>MIT License</span>
+</footer>
+
+<script>
+  function copyInstall(btn) {
+    navigator.clipboard.writeText("bun install -g cbox").then(() => {
+      btn.textContent = "copied!";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("copied"); }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
