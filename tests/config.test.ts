@@ -34,4 +34,14 @@ describe("loadConfig", () => {
     const config = loadConfig();
     expect(config.defaultMountMode).toBe("rw");
   });
+
+  test("saveConfig writes config and loadConfig reads it back", async () => {
+    process.env.CSB_CONFIG_DIR = testDir;
+    const { saveConfig, loadConfig } = await import("../src/config.ts?v=4");
+    saveConfig({ defaultMountMode: "ro", terminalApp: "iTerm", mcpPackages: ["some-pkg"] });
+    const loaded = loadConfig();
+    expect(loaded.defaultMountMode).toBe("ro");
+    expect(loaded.terminalApp).toBe("iTerm");
+    expect(loaded.mcpPackages).toEqual(["some-pkg"]);
+  });
 });
