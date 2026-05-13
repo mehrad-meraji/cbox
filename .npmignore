@@ -1,0 +1,10 @@
+src/
+tests/
+docker/
+public/
+index.ts
+CLAUDE.md
+tsconfig.json
+bun.lock
+.gitlab-ci.yml
+dist/*.map
