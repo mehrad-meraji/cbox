@@ -32,7 +32,7 @@ npm-publish:
   stage: publish
   image: oven/bun:latest
   before_script:
-    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
   script:
     - bun install --frozen-lockfile
     - bun run build
