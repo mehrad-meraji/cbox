@@ -1,11 +1,42 @@
 import { spawnSync } from "child_process";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { writeFileSync, mkdirSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const DOCKERFILE = join(__dirname, "..", "docker", "Dockerfile");
-const DOCKER_CONTEXT = join(__dirname, "..", "docker");
+const DOCKERFILE_CONTENT = `FROM node:20-bookworm-slim
+
+# Chrome dependencies for agent-browser
+RUN apt-get update && apt-get install -y \\
+    wget gnupg ca-certificates fonts-liberation \\
+    libappindicator3-1 libasound2 libatk-bridge2.0-0 \\
+    libatk1.0-0 libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 \\
+    libnspr4 libnss3 libx11-xcb1 libxcomposite1 \\
+    libxdamage1 libxrandr2 xdg-utils \\
+    --no-install-recommends \\
+    && rm -rf /var/lib/apt/lists/*
+
+# Core tools
+RUN npm install -g @anthropic-ai/claude-code agent-browser
+
+# Download Chrome for agent-browser
+RUN agent-browser install
+
+# Local MCP packages (space-separated list injected at build time)
+ARG MCP_PACKAGES=""
+RUN if [ -n "$MCP_PACKAGES" ]; then npm install -g $MCP_PACKAGES; fi
+
+WORKDIR /workspace
+ENTRYPOINT []
+CMD ["claude", "--dangerously-skip-permissions"]
+`;
+
+function dockerBuildContext(): { dockerfile: string; context: string } {
+  const dir = join(tmpdir(), "cbox-docker-context");
+  mkdirSync(dir, { recursive: true });
+  const dockerfile = join(dir, "Dockerfile");
+  writeFileSync(dockerfile, DOCKERFILE_CONTENT);
+  return { dockerfile, context: dir };
+}
 
 export function imageExists(tag: string): boolean {
   const result = spawnSync("docker", ["image", "inspect", tag], { stdio: "pipe" });
@@ -13,11 +44,12 @@ export function imageExists(tag: string): boolean {
 }
 
 export function buildImage(tag: string, mcpPackages: string[]): void {
-  const args = ["build", "-t", tag, "-f", DOCKERFILE];
+  const { dockerfile, context } = dockerBuildContext();
+  const args = ["build", "-t", tag, "-f", dockerfile];
   if (mcpPackages.length > 0) {
     args.push("--build-arg", `MCP_PACKAGES=${mcpPackages.join(" ")}`);
   }
-  args.push(DOCKER_CONTEXT);
+  args.push(context);
 
   console.log(`cbox: building image ${tag}...`);
   const result = spawnSync("docker", args, { stdio: "inherit" });

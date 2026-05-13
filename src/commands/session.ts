@@ -19,7 +19,7 @@ export interface SessionOptions {
 }
 
 export async function sessionCommand(opts: SessionOptions): Promise<void> {
-  checkApiKey();
+  checkApiKey(opts.noConfig);
   checkDocker();
   checkTmux();
 

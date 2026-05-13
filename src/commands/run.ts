@@ -28,7 +28,7 @@ export function parseMountFlag(flag: string): { path: string; mode: "rw" | "ro" 
 }
 
 export async function runCommand(opts: RunOptions): Promise<void> {
-  checkApiKey();
+  checkApiKey(opts.noConfig);
   checkDocker();
 
   let prompt = opts.prompt;
