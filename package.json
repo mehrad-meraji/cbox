@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "description": "Claude Sandbox CLI — run Claude Code in Docker",
   "bin": {
-    "cbox": "./dist/cbox"
+    "cbox": "dist/cbox"
   },
   "scripts": {
     "start": "bun run src/index.ts",
