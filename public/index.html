@@ -5,685 +5,1180 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>cbox — Claude Sandbox CLI</title>
   <meta name="description" content="Run Claude Code in a throwaway Docker container. One-shot automation or persistent interactive sessions that survive terminal disconnects.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0e1117;
-      --bg2:       #161b22;
-      --bg3:       #1c2333;
-      --border:    #30363d;
-      --green:     #3fb950;
-      --green-dim: #238636;
-      --amber:     #e3b341;
-      --blue:      #58a6ff;
-      --text:      #c9d1d9;
-      --text-dim:  #8b949e;
-      --white:     #f0f6fc;
-      --radius:    6px;
-      --mono: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --bg0:      #0f1018;
+      --bg1:      #16172070;
+      --bg2:      #1c1e2c;
+      --bg3:      #23253a;
+      --panel:    #191b28;
+      --border:   #2c2f4a;
+      --border2:  #373b5e;
+      --teal:     #00e8b0;
+      --teal-dim: rgba(0,232,176,0.15);
+      --teal-glow:rgba(0,232,176,0.4);
+      --pink:     #ff3d6b;
+      --pink-dim: rgba(255,61,107,0.2);
+      --amber:    #f0a520;
+      --green:    #3bffaa;
+      --blue:     #4d9fff;
+      --purple:   #9d7dff;
+      --text:     #b8bbd4;
+      --text-dim: #565a7a;
+      --white:    #e8ebff;
+      --mono: 'Azeret Mono', 'JetBrains Mono', monospace;
+      --code: 'JetBrains Mono', monospace;
+      --r: 4px;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      background: var(--bg);
+      background: var(--bg0);
       color: var(--text);
-      font-family: var(--sans);
-      font-size: 16px;
+      font-family: var(--mono);
+      font-size: 15px;
       line-height: 1.6;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* ── Nav ── */
+    /* dot grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    * { position: relative; z-index: 1; }
+
+    /* ── NAV ── */
     nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(14, 17, 23, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 0 2.5rem;
       height: 56px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,16,24,0.8);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
     .nav-logo {
-      font-family: var(--mono);
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
-      color: var(--white);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
       text-decoration: none;
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
     }
 
-    .nav-logo span { color: var(--green); }
+    .nav-logo-bracket {
+      color: var(--teal);
+      font-weight: 300;
+    }
 
-    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-ver {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 2px;
+      margin-left: 0.25rem;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
 
     .nav-links a {
+      font-size: 0.78rem;
       color: var(--text-dim);
       text-decoration: none;
-      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       transition: color .15s;
     }
 
-    .nav-links a:hover { color: var(--text); }
+    .nav-links a:hover { color: var(--teal); }
 
-    /* ── Hero ── */
+    /* ── HERO ── */
     .hero {
-      max-width: 860px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 6rem 2rem 4rem;
-      text-align: center;
+      padding: 6rem 2.5rem 5rem;
     }
 
-    .hero-badge {
-      display: inline-block;
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      color: var(--green);
-      background: rgba(63, 185, 80, 0.1);
-      border: 1px solid rgba(63, 185, 80, 0.25);
-      border-radius: 100px;
-      padding: 0.2rem 0.75rem;
-      margin-bottom: 1.5rem;
-      letter-spacing: .04em;
+    .hero-text { }
+
+    .hero-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
-    .hero h1 {
-      font-family: var(--mono);
-      font-size: clamp(2.5rem, 7vw, 4rem);
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--teal);
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 6vw, 4.5rem);
       font-weight: 700;
       color: var(--white);
-      letter-spacing: -.02em;
-      line-height: 1.15;
-      margin-bottom: 1rem;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 1.25rem;
     }
 
-    .hero h1 span { color: var(--green); }
+    .hero-title-accent { color: var(--teal); }
 
     .hero-sub {
-      font-size: 1.15rem;
+      font-size: 0.9rem;
       color: var(--text-dim);
-      max-width: 520px;
-      margin: 0 auto 2.5rem;
+      line-height: 1.8;
+      max-width: 380px;
+      margin-bottom: 2.5rem;
+      font-weight: 300;
     }
 
-    /* Install bar */
-    .install-bar {
+    .hero-install {
       display: inline-flex;
       align-items: center;
-      gap: 1rem;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 0.7rem 1.25rem;
-      font-family: var(--mono);
-      font-size: 0.95rem;
-      margin-bottom: 1rem;
+      gap: 0.75rem;
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 0.75rem 1.1rem;
+      font-family: var(--code);
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
     }
 
-    .install-bar .prompt { color: var(--green); user-select: none; }
-    .install-bar .cmd { color: var(--white); }
+    .hero-install .p { color: var(--teal); user-select: none; }
+    .hero-install .cmd { color: var(--white); }
 
     .copy-btn {
       background: none;
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 3px;
       color: var(--text-dim);
       cursor: pointer;
-      font-size: 0.75rem;
-      padding: 0.2rem 0.55rem;
+      font-size: 0.7rem;
+      padding: 2px 8px;
       transition: all .15s;
-      font-family: var(--sans);
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
     }
 
-    .copy-btn:hover { color: var(--text); border-color: var(--text-dim); }
-    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+    .copy-btn:hover { color: var(--teal); border-color: var(--teal); }
+    .copy-btn.copied { color: var(--teal); border-color: var(--teal); }
 
-    .install-alt {
+    .hero-alt {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--code);
+    }
+
+    .hero-alt code {
+      color: var(--text);
+      background: var(--bg2);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    /* ── SANDBOX VISUALIZATION ── */
+    .sandbox-viz {
+      display: grid;
+      grid-template-columns: 32px 32px 1fr 28px;
+      grid-template-rows: 1fr;
+      gap: 8px;
+      height: 340px;
+      padding: 1rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    /* corner bracket decoration */
+    .sandbox-viz::before, .sandbox-viz::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: var(--teal);
+      border-style: solid;
+      pointer-events: none;
+    }
+    .sandbox-viz::before {
+      top: 6px; left: 6px;
+      border-width: 1px 0 0 1px;
+    }
+    .sandbox-viz::after {
+      bottom: 6px; right: 6px;
+      border-width: 0 1px 1px 0;
+    }
+
+    /* indicator bar columns */
+    .bar-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .bar {
+      width: 10px;
+      border-radius: 1px;
+      animation: bar-flicker 3s ease-in-out infinite;
+    }
+
+    .bar-col:nth-child(1) .bar { background: var(--teal); animation-delay: calc(var(--i) * -0.31s); }
+    .bar-col:nth-child(2) .bar { background: var(--pink); animation-delay: calc(var(--i) * -0.27s + 0.5s); }
+
+    @keyframes bar-flicker {
+      0%, 100% { opacity: 0.7; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(1.05); }
+    }
+
+    /* center terminal panel */
+    .sandbox-screen {
+      border: 1px solid var(--teal);
+      border-radius: 3px;
+      box-shadow: 0 0 20px var(--teal-glow), inset 0 0 30px rgba(0,232,176,0.03);
+      background: #0a0c14;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: glow-pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { box-shadow: 0 0 16px var(--teal-glow), inset 0 0 30px rgba(0,232,176,0.03); }
+      50% { box-shadow: 0 0 32px var(--teal-glow), 0 0 60px rgba(0,232,176,0.12), inset 0 0 30px rgba(0,232,176,0.05); }
+    }
+
+    .screen-bar {
+      background: #111320;
+      border-bottom: 1px solid rgba(0,232,176,0.15);
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .screen-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+
+    .screen-dot-r { background: #ff5f57; }
+    .screen-dot-y { background: #febc2e; }
+    .screen-dot-g { background: #28c840; }
+
+    .screen-title {
+      font-size: 0.6rem;
+      color: rgba(0,232,176,0.4);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin: 0 auto;
+      font-family: var(--code);
+    }
+
+    .screen-body {
+      flex: 1;
+      padding: 10px 12px;
+      font-family: var(--code);
+      font-size: 0.72rem;
+      line-height: 1.7;
+      overflow: hidden;
+    }
+
+    .sc-dim  { color: rgba(0,232,176,0.3); }
+    .sc-teal { color: var(--teal); }
+    .sc-pink { color: var(--pink); }
+    .sc-white{ color: rgba(232,235,255,0.9); }
+    .sc-amber{ color: var(--amber); }
+    .sc-text { color: rgba(184,187,212,0.6); }
+
+    .cursor {
+      display: inline-block;
+      width: 6px; height: 12px;
+      background: var(--teal);
+      vertical-align: middle;
+      animation: blink .9s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* status dot column */
+    .dot-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      animation: dot-pulse 3s ease-in-out infinite;
+    }
+
+    .status-dot.on  {
+      background: var(--teal);
+      box-shadow: 0 0 6px var(--teal);
+    }
+    .status-dot.on2  {
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation-delay: -1s;
+    }
+    .status-dot.mid {
+      background: var(--amber);
+      box-shadow: 0 0 4px var(--amber);
+      animation-delay: -2s;
+    }
+    .status-dot.off {
+      background: transparent;
+      border: 1px solid var(--border2);
+      animation: none;
+    }
+
+    @keyframes dot-pulse {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .viz-label {
+      font-size: 0.55rem;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: 0.4rem;
+    }
+
+    /* ── DIVIDER ── */
+    .section-divider {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+    }
+
+    .section-divider hr {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── SECTION ── */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 2.5rem;
+    }
+
+    .section-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 16px;
+      height: 1px;
+      background: var(--teal);
+    }
+
+    .section h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.6rem;
+    }
+
+    .section-lead {
+      color: var(--text-dim);
+      font-size: 0.875rem;
+      max-width: 500px;
+      margin-bottom: 3rem;
+      font-weight: 300;
+    }
+
+    /* ── MODES ── */
+    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+    .mode-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1.75rem;
+      transition: border-color .2s;
+    }
+
+    .mode-card:hover { border-color: var(--border2); }
+
+    .mode-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .mode-tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+
+    .mode-tag.run     { color: var(--teal); background: var(--teal-dim); border: 1px solid rgba(0,232,176,0.2); }
+    .mode-tag.session { color: var(--pink); background: var(--pink-dim); border: 1px solid rgba(255,61,107,0.2); }
+
+    .mode-indicator {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .mode-indicator span {
+      display: block;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--border2);
+    }
+
+    .mode-indicator span.lit {
+      background: var(--teal);
+      box-shadow: 0 0 4px var(--teal);
+    }
+
+    .mode-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+
+    .mode-card p {
       font-size: 0.82rem;
       color: var(--text-dim);
-      font-family: var(--mono);
+      margin-bottom: 1.25rem;
+      font-weight: 300;
     }
 
-    .install-alt span { color: var(--text-dim); }
-
-    /* ── Terminal window ── */
-    .terminal {
-      background: var(--bg2);
+    .mode-code {
+      background: var(--bg0);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      text-align: left;
+      border-radius: 3px;
+      padding: 0.8rem 1rem;
+      font-family: var(--code);
+      font-size: 0.75rem;
+      line-height: 1.8;
     }
 
-    .terminal-bar {
+    .mode-code .p { color: var(--teal); }
+    .mode-code .cmd { color: var(--white); }
+    .mode-code .flag { color: var(--blue); }
+    .mode-code .arg { color: var(--amber); }
+
+    /* ── FEATURES ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .feature {
+      background: var(--panel);
+      padding: 1.5rem 1.25rem;
+      transition: background .2s;
+    }
+
+    .feature:hover { background: var(--bg3); }
+
+    .feature-num {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+      margin-bottom: 0.75rem;
+      font-family: var(--code);
+    }
+
+    .feature-icon {
+      font-size: 1rem;
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+
+    .feature h4 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.03em;
+    }
+
+    .feature p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+      font-weight: 300;
+    }
+
+    /* ── COMMANDS ── */
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .cmd-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .cmd-panel-header {
       background: var(--bg3);
       border-bottom: 1px solid var(--border);
       padding: 0.6rem 1rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
-    .dot {
-      width: 12px; height: 12px;
+    .cmd-panel-header::before {
+      content: '';
+      display: block;
+      width: 6px; height: 6px;
       border-radius: 50%;
+      background: var(--border2);
     }
 
-    .dot-r { background: #ff5f57; }
-    .dot-y { background: #febc2e; }
-    .dot-g { background: #28c840; }
-
-    .terminal-title {
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .terminal-body {
-      padding: 1.25rem 1.5rem;
-      font-family: var(--mono);
-      font-size: 0.875rem;
-      line-height: 1.7;
-    }
-
-    .t-prompt { color: var(--green); }
-    .t-cmd    { color: var(--white); }
-    .t-out    { color: var(--text-dim); }
-    .t-info   { color: var(--blue); }
-    .t-good   { color: var(--green); }
-    .t-warn   { color: var(--amber); }
-    .t-blank  { display: block; height: 0.4rem; }
-
-    /* ── Sections ── */
-    .section {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 5rem 2rem;
-    }
-
-    .section-label {
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      color: var(--green);
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      margin-bottom: 0.5rem;
-    }
-
-    .section h2 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--white);
-      margin-bottom: 0.75rem;
-    }
-
-    .section-lead {
-      color: var(--text-dim);
-      max-width: 540px;
-      margin-bottom: 2.5rem;
-    }
-
-    /* ── Modes ── */
-    .modes {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .mode-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      transition: border-color .2s;
-    }
-
-    .mode-card:hover { border-color: var(--green-dim); }
-
-    .mode-icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .mode-card h3 {
-      font-family: var(--mono);
-      font-size: 1rem;
-      color: var(--white);
-      margin-bottom: 0.4rem;
-    }
-
-    .mode-card p {
-      font-size: 0.9rem;
-      color: var(--text-dim);
-      margin-bottom: 1rem;
-    }
-
-    .mode-example {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 0.75rem 1rem;
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      color: var(--text);
-    }
-
-    .mode-example .t-prompt { color: var(--green); }
-
-    /* ── Features grid ── */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-
-    .feature {
-      padding: 1.25rem;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-
-    .feature-icon {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .feature h4 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--white);
-      margin-bottom: 0.3rem;
-    }
-
-    .feature p {
-      font-size: 0.83rem;
-      color: var(--text-dim);
-      line-height: 1.5;
-    }
-
-    /* ── Divider ── */
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 0 2rem;
-    }
-
-    /* ── Command table ── */
     .cmd-table {
       width: 100%;
       border-collapse: collapse;
-      font-family: var(--mono);
-      font-size: 0.85rem;
-    }
-
-    .cmd-table th {
-      text-align: left;
-      color: var(--text-dim);
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-bottom: 1px solid var(--border);
+      font-family: var(--code);
+      font-size: 0.78rem;
     }
 
     .cmd-table td {
-      padding: 0.6rem 1rem;
-      border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid rgba(44,47,74,0.6);
       vertical-align: top;
     }
 
     .cmd-table tr:last-child td { border-bottom: none; }
-    .cmd-table td:first-child { color: var(--blue); white-space: nowrap; }
-    .cmd-table td:last-child { color: var(--text-dim); font-family: var(--sans); font-size: 0.82rem; }
+    .cmd-table td:first-child { color: var(--teal); white-space: nowrap; width: 55%; }
+    .cmd-table td:last-child { color: var(--text-dim); font-family: var(--mono); font-size: 0.72rem; }
 
-    .table-wrap {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: auto;
+    /* ── INSTALL / CTA ── */
+    .install-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 2.5rem 7rem;
     }
 
-    /* ── Footer ── */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 2rem;
-      text-align: center;
-      font-size: 0.85rem;
+    .install-inner {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .install-header {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .install-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
       color: var(--text-dim);
     }
 
-    footer a { color: var(--text-dim); text-decoration: none; }
-    footer a:hover { color: var(--text); }
-    footer .sep { margin: 0 0.75rem; opacity: 0.3; }
+    .prereqs {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 1rem;
+    }
 
-    /* ── Tabs ── */
+    .prereq {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .prereq-check {
+      color: var(--teal);
+      font-size: 0.7rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .prereq-label {
+      font-size: 0.78rem;
+      color: var(--white);
+      font-weight: 500;
+      margin-bottom: 0.15rem;
+    }
+
+    .prereq-desc {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-weight: 300;
+    }
+
+    .prereq-desc a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    .prereq-desc a:hover { color: var(--teal); }
+
+    .install-tabs-bar {
+      padding: 1rem 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0;
+    }
+
     .tab-btn {
       background: none;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border: none;
+      border-bottom: 2px solid transparent;
       color: var(--text-dim);
       cursor: pointer;
-      font-size: 0.85rem;
-      font-family: var(--sans);
-      padding: 0.4rem 1rem;
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0 1rem 0.75rem;
       transition: all .15s;
+      margin-bottom: -1px;
     }
 
-    .tab-btn:hover { color: var(--text); border-color: var(--text-dim); }
-    .tab-btn.active { color: var(--white); background: var(--bg3); border-color: var(--green-dim); }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
 
-    /* ── Responsive ── */
-    @media (max-width: 600px) {
-      .hero { padding: 4rem 1.5rem 3rem; }
+    .install-body { padding: 1.5rem; }
+
+    .install-terminal {
+      background: var(--bg0);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1.1rem 1.25rem;
+      font-family: var(--code);
+      font-size: 0.8rem;
+      line-height: 2;
+    }
+
+    .it-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .it-comment { color: var(--text-dim); font-size: 0.72rem; }
+    .it-p { color: var(--teal); }
+    .it-cmd { color: var(--white); }
+
+    .install-source-link {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .source-link {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      border-radius: 3px;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .source-link:hover { color: var(--teal); border-color: var(--teal); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+
+    footer a { color: var(--text-dim); text-decoration: none; transition: color .15s; }
+    footer a:hover { color: var(--teal); }
+
+    .footer-links { display: flex; gap: 2rem; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 1.5rem; }
+      .sandbox-viz { display: none; }
+      .modes { grid-template-columns: 1fr; }
+      .features { grid-template-columns: 1fr 1fr; }
+      .cmd-grid { grid-template-columns: 1fr; }
+      .prereqs { grid-template-columns: 1fr; }
+      nav { padding: 0 1.5rem; }
       .section { padding: 3.5rem 1.5rem; }
-      .install-bar { flex-wrap: wrap; }
-      nav { padding: 0 1.25rem; }
     }
   </style>
 </head>
 <body>
 
+<!-- ── NAV ── -->
 <nav>
-  <a class="nav-logo" href="#"><span>c</span>box</a>
+  <a class="nav-logo" href="#">
+    <span class="nav-logo-bracket">[</span>cbox<span class="nav-logo-bracket">]</span>
+    <span class="nav-ver">v0.1.0</span>
+  </a>
   <div class="nav-links">
     <a href="#modes">Modes</a>
     <a href="#commands">Commands</a>
     <a href="#features">Features</a>
-    <a href="https://gitlab.com/mehrad.meraji/cbox" target="_blank" rel="noopener">GitLab</a>
+    <a href="#install">Install</a>
+    <a href="https://gitlab.com/mehrad.meraji/cbox" target="_blank" rel="noopener">GitLab ↗</a>
   </div>
 </nav>
 
-<!-- ── Hero ── -->
+<!-- ── HERO ── -->
 <section class="hero">
-  <div class="hero-badge">v0.1.0 · Docker + Claude Code</div>
-
-  <h1><span>c</span>box</h1>
-
-  <p class="hero-sub">
-    Run Claude Code in a throwaway Docker container.
-    One-shot automation or persistent sessions that survive terminal disconnects.
-  </p>
-
-  <div class="install-bar">
-    <span class="prompt">$</span>
-    <span class="cmd">bun install -g @_mehrad/cbox</span>
-    <button class="copy-btn" onclick="copyInstall(this)">copy</button>
+  <div class="hero-text">
+    <div class="hero-eyebrow">Claude Sandbox CLI</div>
+    <h1 class="hero-title"><span class="hero-title-accent">c</span>box</h1>
+    <p class="hero-sub">
+      Run Claude Code in a throwaway Docker container.
+      One-shot automation or persistent sessions that survive terminal disconnects.
+    </p>
+    <div class="hero-install">
+      <span class="p">$</span>
+      <span class="cmd">bun install -g @_mehrad/cbox</span>
+      <button class="copy-btn" id="hero-copy" onclick="copyText(this,'bun install -g @_mehrad/cbox')">copy</button>
+    </div>
+    <br>
+    <span class="hero-alt">or: <code>bunx @_mehrad/cbox "your prompt"</code></span>
   </div>
-  <br>
-  <span class="install-alt">or run without installing: <code>bunx @_mehrad/cbox</code></span>
+
+  <!-- visualization -->
+  <div class="sandbox-viz">
+    <!-- left bar col 1 (teal) -->
+    <div class="bar-col" id="bars1"></div>
+    <!-- left bar col 2 (pink) -->
+    <div class="bar-col" id="bars2"></div>
+
+    <!-- center screen -->
+    <div class="sandbox-screen">
+      <div class="screen-bar">
+        <span class="screen-dot screen-dot-r"></span>
+        <span class="screen-dot screen-dot-y"></span>
+        <span class="screen-dot screen-dot-g"></span>
+        <span class="screen-title">sandbox · docker</span>
+      </div>
+      <div class="screen-body">
+        <div class="sc-dim">// mounting ~/.claude:ro</div>
+        <div class="sc-dim">// patching localhost → host.docker.internal</div>
+        <div>&nbsp;</div>
+        <div><span class="sc-teal">$</span> <span class="sc-white">cbox run --mount . \</span></div>
+        <div style="padding-left:1.4rem"><span class="sc-white">"refactor auth to use JWT"</span></div>
+        <div>&nbsp;</div>
+        <div><span class="sc-amber">▶</span> <span class="sc-text">Reading src/auth.ts</span></div>
+        <div><span class="sc-amber">▶</span> <span class="sc-text">Writing src/auth.ts</span></div>
+        <div><span class="sc-teal">✓</span> <span class="sc-text">Done</span> <span class="cursor"></span></div>
+      </div>
+    </div>
+
+    <!-- right dot column -->
+    <div class="dot-col">
+      <div>
+        <div class="status-dot on"></div>
+        <div class="viz-label">tmux</div>
+      </div>
+      <div>
+        <div class="status-dot on2"></div>
+        <div class="viz-label">docker</div>
+      </div>
+      <div>
+        <div class="status-dot on2" style="animation-delay:-1.5s"></div>
+        <div class="viz-label">claude</div>
+      </div>
+      <div>
+        <div class="status-dot mid"></div>
+        <div class="viz-label">mcp</div>
+      </div>
+      <div>
+        <div class="status-dot off"></div>
+        <div class="viz-label">idle</div>
+      </div>
+      <div>
+        <div class="status-dot off"></div>
+        <div class="viz-label">idle</div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<!-- ── Demo terminal ── -->
-<div style="max-width:720px;margin:0 auto 5rem;padding:0 2rem;">
-  <div class="terminal">
-    <div class="terminal-bar">
-      <span class="dot dot-r"></span>
-      <span class="dot dot-y"></span>
-      <span class="dot dot-g"></span>
-      <span class="terminal-title">bash</span>
-    </div>
-    <div class="terminal-body">
-      <div><span class="t-prompt">$ </span><span class="t-cmd">cbox run --mount . "add unit tests for the auth module"</span></div>
-      <div class="t-info">cbox: building image cbox:0.1.0... (first run, ~60s)</div>
-      <span class="t-blank"></span>
-      <div class="t-out">✓ Reading auth.ts</div>
-      <div class="t-out">✓ Writing tests/auth.test.ts (12 tests)</div>
-      <div class="t-out">✓ All tests passing</div>
-      <span class="t-blank"></span>
-      <div><span class="t-good">Done in 23s · exit 0</span></div>
-      <span class="t-blank"></span>
-      <div><span class="t-prompt">$ </span><span class="t-cmd">cbox session --mount . --name refactor-auth</span></div>
-      <div class="t-info">cbox: session a3f91b (refactor-auth) started</div>
-      <div class="t-out"># Claude Code is now running interactively inside Docker</div>
-      <div class="t-out"># Detach from tmux anytime — session survives terminal close</div>
-      <div class="t-out"># Reattach later with: cbox attach refactor-auth</div>
-    </div>
-  </div>
-</div>
+<div class="section-divider"><hr></div>
 
-<hr class="divider">
-
-<!-- ── Modes ── -->
+<!-- ── MODES ── -->
 <section class="section" id="modes">
   <div class="section-label">Two modes</div>
   <h2>Pick your workflow</h2>
-  <p class="section-lead">Use one-shot mode for automation and scripting, or drop into an interactive session for longer work.</p>
+  <p class="section-lead">One-shot for automation and scripting. Session for interactive, persistent work.</p>
 
   <div class="modes">
     <div class="mode-card">
-      <div class="mode-icon">⚡</div>
-      <h3>cbox run</h3>
-      <p>Fire a prompt, stream the output, exit with the container's exit code. Pipe it, script it, automate it.</p>
-      <div class="mode-example">
-        <div><span class="t-prompt">$ </span>cbox run "refactor auth to JWT"</div>
-        <div><span class="t-prompt">$ </span>cbox run -j "find TODOs" | jq</div>
-        <div><span class="t-prompt">$ </span>cbox run -f task.md --mount ./src</div>
+      <div class="mode-header">
+        <span class="mode-tag run">run</span>
+        <div class="mode-indicator">
+          <span class="lit"></span><span class="lit"></span><span></span>
+        </div>
+      </div>
+      <h3>One-shot mode</h3>
+      <p>Fire a prompt, stream output, exit with container's exit code. Pipe it, script it, automate it.</p>
+      <div class="mode-code">
+        <div><span class="p">$</span> <span class="cmd">cbox</span> <span class="arg">"refactor auth to JWT"</span></div>
+        <div><span class="p">$</span> <span class="cmd">cbox run</span> <span class="flag">-j</span> <span class="arg">"find TODOs"</span> | jq</div>
+        <div><span class="p">$</span> <span class="cmd">cbox run</span> <span class="flag">-f</span> task.md <span class="flag">--mount</span> ./src</div>
       </div>
     </div>
 
     <div class="mode-card">
-      <div class="mode-icon">🖥</div>
-      <h3>cbox session</h3>
-      <p>Interactive Claude Code session backed by tmux on the host. Disconnect and reconnect anytime.</p>
-      <div class="mode-example">
-        <div><span class="t-prompt">$ </span>cbox session --name my-task</div>
-        <div><span class="t-prompt">$ </span>cbox list</div>
-        <div><span class="t-prompt">$ </span>cbox attach my-task</div>
+      <div class="mode-header">
+        <span class="mode-tag session">session</span>
+        <div class="mode-indicator">
+          <span class="lit" style="background:var(--pink);box-shadow:0 0 4px var(--pink)"></span>
+          <span class="lit" style="background:var(--pink);box-shadow:0 0 4px var(--pink)"></span>
+          <span class="lit" style="background:var(--pink);box-shadow:0 0 4px var(--pink)"></span>
+        </div>
+      </div>
+      <h3>Persistent session</h3>
+      <p>Interactive Claude Code backed by tmux on the host. Disconnect and reconnect anytime — session survives.</p>
+      <div class="mode-code">
+        <div><span class="p">$</span> <span class="cmd">cbox session</span> <span class="flag">--name</span> refactor</div>
+        <div><span class="p">$</span> <span class="cmd">cbox list</span></div>
+        <div><span class="p">$</span> <span class="cmd">cbox attach</span> refactor</div>
       </div>
     </div>
   </div>
 </section>
 
-<hr class="divider">
+<div class="section-divider"><hr></div>
 
-<!-- ── Commands ── -->
-<section class="section" id="commands">
-  <div class="section-label">Reference</div>
-  <h2>Commands &amp; flags</h2>
-  <p class="section-lead">Everything runs through the <code style="font-family:var(--mono);color:var(--blue);font-size:0.9em">cbox</code> binary.</p>
-
-  <div class="table-wrap" style="margin-bottom:1.5rem;">
-    <table class="cmd-table">
-      <tr><th>Command</th><th>Description</th></tr>
-      <tr><td>cbox "&lt;prompt&gt;"</td><td>One-shot run (implicit)</td></tr>
-      <tr><td>cbox run "&lt;prompt&gt;"</td><td>One-shot run (explicit)</td></tr>
-      <tr><td>cbox run -f task.md</td><td>Prompt from file</td></tr>
-      <tr><td>cbox run -j "&lt;prompt&gt;"</td><td>JSON output envelope</td></tr>
-      <tr><td>cbox session</td><td>Start interactive session</td></tr>
-      <tr><td>cbox session --name &lt;n&gt;</td><td>Named session</td></tr>
-      <tr><td>cbox list</td><td>List active sessions</td></tr>
-      <tr><td>cbox attach &lt;id|name&gt;</td><td>Reattach to a session</td></tr>
-      <tr><td>cbox kill &lt;id|name&gt;</td><td>Kill session + container</td></tr>
-      <tr><td>cbox kill --all</td><td>Kill all sessions</td></tr>
-      <tr><td>cbox build</td><td>Force rebuild Docker image</td></tr>
-    </table>
-  </div>
-
-  <div class="table-wrap">
-    <table class="cmd-table">
-      <tr><th>Flag</th><th>Description</th></tr>
-      <tr><td>--mount &lt;path&gt;</td><td>Mount host path into /workspace (read-write)</td></tr>
-      <tr><td>--mount &lt;path&gt;:ro</td><td>Mount read-only</td></tr>
-      <tr><td>--env KEY=VALUE</td><td>Pass environment variable into container (repeatable)</td></tr>
-      <tr><td>--no-config</td><td>Skip mounting ~/.claude (full isolation)</td></tr>
-      <tr><td>--no-browser</td><td>Skip agent-browser for a lighter container</td></tr>
-    </table>
-  </div>
-</section>
-
-<hr class="divider">
-
-<!-- ── Features ── -->
+<!-- ── FEATURES ── -->
 <section class="section" id="features">
   <div class="section-label">Features</div>
   <h2>What's inside</h2>
-  <p class="section-lead">cbox is a thin coordinator — Docker, tmux, and Claude Code do the heavy lifting.</p>
+  <p class="section-lead">cbox is a thin coordinator. Docker, tmux, and Claude Code do the heavy lifting.</p>
 
   <div class="features">
     <div class="feature">
-      <div class="feature-icon">🐳</div>
+      <div class="feature-num">01</div>
+      <span class="feature-icon">🐳</span>
       <h4>Docker isolation</h4>
-      <p>Every run is a throwaway container. Nothing leaks to your host filesystem unless you mount it.</p>
+      <p>Every run is a throwaway container. Nothing touches your host unless you mount it.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🔄</div>
+      <div class="feature-num">02</div>
+      <span class="feature-icon">🔄</span>
       <h4>tmux persistence</h4>
-      <p>Sessions survive terminal disconnects via host-side tmux. Reattach by name or ID anytime.</p>
+      <p>Sessions survive terminal disconnects via host-side tmux. Reattach by name or ID.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🌐</div>
-      <h4>MCP servers</h4>
-      <p>Host skills and MCP config mounted read-only. localhost URLs rewritten to host.docker.internal automatically.</p>
+      <div class="feature-num">03</div>
+      <span class="feature-icon">🌐</span>
+      <h4>MCP + skills</h4>
+      <p>Host ~/.claude mounted read-only. localhost URLs rewritten to host.docker.internal.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🖥</div>
+      <div class="feature-num">04</div>
+      <span class="feature-icon">🖥</span>
       <h4>agent-browser</h4>
-      <p>Chrome baked into the image. Headless browser automation available inside every container.</p>
+      <p>Chrome baked into the image. Headless browser automation in every container.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">📋</div>
+      <div class="feature-num">05</div>
+      <span class="feature-icon">📋</span>
       <h4>JSON output</h4>
-      <p>Use <code style="font-family:var(--mono);font-size:0.85em">-j</code> to get structured output — always valid JSON, even on failure. Safe to pipe into jq.</p>
+      <p>Use <code style="font-family:var(--code);color:var(--teal)">-j</code> for structured output. Always valid JSON, even on failure.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🚀</div>
-      <h4>Raycast integration</h4>
-      <p>Script Commands for listing, attaching, killing sessions, and running prompts — without a terminal.</p>
+      <div class="feature-num">06</div>
+      <span class="feature-icon">🚀</span>
+      <h4>Raycast</h4>
+      <p>Script Commands for listing, attaching, and running prompts without a terminal.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🔑</div>
-      <h4>Secure by design</h4>
-      <p>API key passed by reference, never embedded. ~/.claude mounted read-only. MCP patches go to tmpdir.</p>
+      <div class="feature-num">07</div>
+      <span class="feature-icon">🔑</span>
+      <h4>Secure</h4>
+      <p>API key by reference only. ~/.claude read-only. MCP patches written to tmpdir.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">📦</div>
+      <div class="feature-num">08</div>
+      <span class="feature-icon">📦</span>
       <h4>Zero config</h4>
-      <p>Image builds automatically on first run. Rebuilds only when CLI version or MCP packages change.</p>
+      <p>Image builds on first run. Rebuilds only when CLI version or MCP packages change.</p>
     </div>
   </div>
 </section>
 
-<hr class="divider">
+<div class="section-divider"><hr></div>
 
-<!-- ── Get started ── -->
-<section class="section" id="install" style="padding-bottom:6rem;">
-  <div class="section-label">Get started</div>
-  <h2 style="margin-bottom:0.5rem;">Install cbox</h2>
-  <p style="color:var(--text-dim);margin-bottom:2rem;">Pick your preferred setup method.</p>
+<!-- ── COMMANDS ── -->
+<section class="section" id="commands">
+  <div class="section-label">Reference</div>
+  <h2>Commands &amp; flags</h2>
+  <p class="section-lead">Everything runs through the <code style="font-family:var(--code);color:var(--teal);font-size:0.9em">cbox</code> binary.</p>
 
-  <!-- Prerequisites -->
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:2rem;">
-    <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:0.75rem;font-family:var(--mono);">Prerequisites</div>
-    <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.875rem;">
-      <div style="display:flex;align-items:baseline;gap:0.75rem;">
-        <span style="color:var(--green);font-family:var(--mono);">✓</span>
-        <span><a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;">Docker</a> installed and running</span>
-      </div>
-      <div style="display:flex;align-items:baseline;gap:0.75rem;">
-        <span style="color:var(--green);font-family:var(--mono);">✓</span>
-        <span><a href="https://docs.anthropic.com/en/docs/claude-code/getting-started" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;">Claude Code</a> installed and logged in (<code style="font-family:var(--mono);font-size:0.85em;color:var(--text);">claude login</code>)</span>
-      </div>
-      <div style="display:flex;align-items:baseline;gap:0.75rem;">
-        <span style="color:var(--green);font-family:var(--mono);">✓</span>
-        <span><a href="https://github.com/tmux/tmux" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;">tmux</a> — required for <code style="font-family:var(--mono);font-size:0.85em;color:var(--text);">cbox session</code> and <code style="font-family:var(--mono);font-size:0.85em;color:var(--text);">cbox attach</code></span>
-      </div>
+  <div class="cmd-grid">
+    <div class="cmd-panel">
+      <div class="cmd-panel-header">Commands</div>
+      <table class="cmd-table">
+        <tr><td>cbox "&lt;prompt&gt;"</td><td>One-shot (implicit)</td></tr>
+        <tr><td>cbox run -f task.md</td><td>Prompt from file</td></tr>
+        <tr><td>cbox run -j "&lt;prompt&gt;"</td><td>JSON output</td></tr>
+        <tr><td>cbox session</td><td>Start interactive session</td></tr>
+        <tr><td>cbox session --name &lt;n&gt;</td><td>Named session</td></tr>
+        <tr><td>cbox list</td><td>List active sessions</td></tr>
+        <tr><td>cbox attach &lt;id|name&gt;</td><td>Reattach</td></tr>
+        <tr><td>cbox kill &lt;id|name&gt;</td><td>Kill session</td></tr>
+        <tr><td>cbox build</td><td>Force rebuild image</td></tr>
+      </table>
+    </div>
+
+    <div class="cmd-panel">
+      <div class="cmd-panel-header">Flags</div>
+      <table class="cmd-table">
+        <tr><td>--mount &lt;path&gt;</td><td>Mount into /workspace (rw)</td></tr>
+        <tr><td>--mount &lt;path&gt;:ro</td><td>Mount read-only</td></tr>
+        <tr><td>--env KEY=VALUE</td><td>Pass env var (repeatable)</td></tr>
+        <tr><td>--no-config</td><td>Skip ~/.claude mount</td></tr>
+        <tr><td>--no-browser</td><td>Skip agent-browser</td></tr>
+        <tr><td>-f, --file &lt;path&gt;</td><td>Read prompt from file</td></tr>
+        <tr><td>-j, --json</td><td>JSON output envelope</td></tr>
+      </table>
     </div>
   </div>
+</section>
 
-  <!-- Tabs -->
-  <div style="display:flex;gap:0.5rem;margin-bottom:1rem;" id="install-tabs">
-    <button class="tab-btn active" onclick="showTab('cli')" id="tab-cli">CLI install</button>
-    <button class="tab-btn" onclick="showTab('docker')" id="tab-docker">Prebuilt image</button>
-  </div>
+<div class="section-divider"><hr></div>
 
-  <!-- CLI tab -->
-  <div id="panel-cli">
-    <div class="terminal" style="max-width:560px;">
-      <div class="terminal-bar">
-        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+<!-- ── INSTALL ── -->
+<section class="install-section" id="install">
+  <div class="install-inner">
+    <div class="install-header">
+      <span class="install-title">// get started</span>
+      <span style="font-size:0.65rem;color:var(--text-dim);letter-spacing:0.08em;">Requires macOS · Docker · tmux</span>
+    </div>
+
+    <!-- prerequisites -->
+    <div class="prereqs">
+      <div class="prereq">
+        <span class="prereq-check">✓</span>
+        <div>
+          <div class="prereq-label">Docker</div>
+          <div class="prereq-desc">Installed and running. <a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener">Get Docker →</a></div>
+        </div>
       </div>
-      <div class="terminal-body">
-        <div style="color:var(--text-dim);margin-bottom:0.5rem;font-size:0.8rem;"># global install</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-          <div><span class="t-prompt">$ </span><span class="t-cmd">bun install -g @_mehrad/cbox</span></div>
+      <div class="prereq">
+        <span class="prereq-check">✓</span>
+        <div>
+          <div class="prereq-label">Claude Code</div>
+          <div class="prereq-desc">Installed and logged in via <code style="font-family:var(--code);color:var(--text)">claude login</code>. <a href="https://docs.anthropic.com/en/docs/claude-code/getting-started" target="_blank" rel="noopener">Get Claude Code →</a></div>
+        </div>
+      </div>
+      <div class="prereq">
+        <span class="prereq-check">✓</span>
+        <div>
+          <div class="prereq-label">tmux</div>
+          <div class="prereq-desc">Required for <code style="font-family:var(--code);color:var(--text)">session</code> and <code style="font-family:var(--code);color:var(--text)">attach</code>. <code style="font-family:var(--code);color:var(--text)">brew install tmux</code></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- tabs -->
+    <div class="install-tabs-bar">
+      <button class="tab-btn active" id="tab-cli" onclick="showTab('cli')">CLI install</button>
+      <button class="tab-btn" id="tab-docker" onclick="showTab('docker')">Prebuilt image</button>
+    </div>
+
+    <!-- CLI panel -->
+    <div class="install-body" id="panel-cli">
+      <div class="install-terminal">
+        <div class="it-comment"># global install</div>
+        <div class="it-row">
+          <div><span class="it-p">$</span> <span class="it-cmd">bun install -g @_mehrad/cbox</span></div>
           <button class="copy-btn" onclick="copyText(this,'bun install -g @_mehrad/cbox')">copy</button>
         </div>
-        <div style="color:var(--text-dim);margin-top:0.75rem;margin-bottom:0.5rem;font-size:0.8rem;"># or run without installing</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-          <div><span class="t-prompt">$ </span><span class="t-cmd">bunx @_mehrad/cbox "your prompt"</span></div>
+        <div class="it-comment" style="margin-top:0.75rem"># or run without installing</div>
+        <div class="it-row">
+          <div><span class="it-p">$</span> <span class="it-cmd">bunx @_mehrad/cbox "your prompt"</span></div>
           <button class="copy-btn" onclick="copyText(this,'bunx @_mehrad/cbox')">copy</button>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Docker tab -->
-  <div id="panel-docker" style="display:none;">
-    <div class="terminal" style="max-width:560px;">
-      <div class="terminal-bar">
-        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+      <div class="install-source-link">
+        <a href="https://gitlab.com/mehrad.meraji/cbox" target="_blank" rel="noopener" class="source-link">
+          View source on GitLab ↗
+        </a>
       </div>
-      <div class="terminal-body">
-        <div style="color:var(--text-dim);margin-bottom:0.5rem;font-size:0.8rem;"># pull the prebuilt image</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-          <div><span class="t-prompt">$ </span><span class="t-cmd">docker pull registry.gitlab.com/mehrad.meraji/cbox:latest</span></div>
+    </div>
+
+    <!-- Docker panel -->
+    <div class="install-body" id="panel-docker" style="display:none">
+      <div class="install-terminal">
+        <div class="it-comment"># pull prebuilt image</div>
+        <div class="it-row">
+          <div><span class="it-p">$</span> <span class="it-cmd">docker pull registry.gitlab.com/mehrad.meraji/cbox:latest</span></div>
           <button class="copy-btn" onclick="copyText(this,'docker pull registry.gitlab.com/mehrad.meraji/cbox:latest')">copy</button>
         </div>
-        <div style="color:var(--text-dim);margin-top:0.75rem;margin-bottom:0.5rem;font-size:0.8rem;"># run a prompt directly</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-          <div><span class="t-prompt">$ </span><span class="t-cmd">docker run --rm -it \</span></div>
+        <div class="it-comment" style="margin-top:0.75rem"># run a prompt directly</div>
+        <div>
+          <span class="it-p">$</span> <span class="it-cmd">docker run --rm -it \</span>
         </div>
-        <div style="padding-left:1.5rem;"><span class="t-cmd">-e ANTHROPIC_API_KEY \</span></div>
-        <div style="padding-left:1.5rem;"><span class="t-cmd">-v ~/.claude:/root/.claude:ro \</span></div>
-        <div style="padding-left:1.5rem;"><span class="t-cmd">--add-host=host.docker.internal:host-gateway \</span></div>
-        <div style="padding-left:1.5rem;"><span class="t-cmd">registry.gitlab.com/mehrad.meraji/cbox:latest \</span></div>
-        <div style="padding-left:1.5rem;"><span class="t-cmd">claude --dangerously-skip-permissions "your prompt"</span></div>
-        <div class="t-blank"></div>
-        <div style="color:var(--text-dim);font-size:0.8rem;"># or use cbox run/session to manage it automatically</div>
+        <div style="padding-left:1.5rem"><span class="it-cmd">-e ANTHROPIC_API_KEY \</span></div>
+        <div style="padding-left:1.5rem"><span class="it-cmd">-v ~/.claude:/root/.claude:ro \</span></div>
+        <div style="padding-left:1.5rem"><span class="it-cmd">--add-host=host.docker.internal:host-gateway \</span></div>
+        <div style="padding-left:1.5rem"><span class="it-cmd">registry.gitlab.com/mehrad.meraji/cbox:latest \</span></div>
+        <div style="padding-left:1.5rem">
+          <span class="it-cmd">claude --dangerously-skip-permissions "your prompt"</span>
+        </div>
+      </div>
+      <div class="install-source-link">
+        <a href="https://gitlab.com/mehrad.meraji/cbox/container_registry" target="_blank" rel="noopener" class="source-link">
+          View Container Registry ↗
+        </a>
       </div>
     </div>
-  </div>
-
-  <div style="margin-top:1.5rem;text-align:center;">
-    <a href="https://gitlab.com/mehrad.meraji/cbox"
-       target="_blank" rel="noopener"
-       style="color:var(--text-dim);text-decoration:none;font-size:0.9rem;border:1px solid var(--border);padding:0.5rem 1.25rem;border-radius:var(--radius);transition:all .15s;display:inline-block;"
-       onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-dim)'"
-       onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">
-      View source on GitLab →
-    </a>
   </div>
 </section>
 
+<!-- ── FOOTER ── -->
 <footer>
-  <a href="https://gitlab.com/mehrad.meraji/cbox" target="_blank" rel="noopener">GitLab</a>
-  <span class="sep">|</span>
-  <a href="https://gitlab.com/mehrad.meraji/cbox/-/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
-  <span class="sep">|</span>
-  <span>MIT License</span>
+  <span style="color:var(--text-dim)"><span style="color:var(--teal)">[</span>cbox<span style="color:var(--teal)">]</span> · MIT License</span>
+  <div class="footer-links">
+    <a href="https://gitlab.com/mehrad.meraji/cbox" target="_blank" rel="noopener">GitLab</a>
+    <a href="https://gitlab.com/mehrad.meraji/cbox/-/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
+    <a href="https://www.npmjs.com/package/@_mehrad/cbox" target="_blank" rel="noopener">npm</a>
+  </div>
 </footer>
 
 <script>
+  // generate bar charts
+  function makeBars(id, heights) {
+    const col = document.getElementById(id);
+    heights.forEach((h, i) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.height = h + 'px';
+      bar.style.setProperty('--i', i);
+      col.appendChild(bar);
+    });
+  }
+
+  makeBars('bars1', [6,14,9,20,12,7,18,24,10,16,8,22,11,17,13]);
+  makeBars('bars2', [12,7,20,9,15,22,6,18,11,25,8,14,19,7,16]);
+
   function copyText(btn, text) {
     navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = "copied!";
-      btn.classList.add("copied");
-      setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("copied"); }, 2000);
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
     });
   }
 
   function showTab(name) {
-    document.getElementById("panel-cli").style.display = name === "cli" ? "" : "none";
-    document.getElementById("panel-docker").style.display = name === "docker" ? "" : "none";
-    document.getElementById("tab-cli").classList.toggle("active", name === "cli");
-    document.getElementById("tab-docker").classList.toggle("active", name === "docker");
+    document.getElementById('panel-cli').style.display    = name === 'cli'    ? '' : 'none';
+    document.getElementById('panel-docker').style.display = name === 'docker' ? '' : 'none';
+    document.getElementById('tab-cli').classList.toggle('active',    name === 'cli');
+    document.getElementById('tab-docker').classList.toggle('active', name === 'docker');
   }
 </script>
 
