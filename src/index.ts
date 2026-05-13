@@ -1,10 +1,98 @@
+#!/usr/bin/env bun
 import { Command } from "commander";
+import { buildCommand } from "./commands/build.ts";
+import { runCommand } from "./commands/run.ts";
+import { sessionCommand } from "./commands/session.ts";
+import { listCommand } from "./commands/list.ts";
+import { attachCommand } from "./commands/attach.ts";
+import { killCommand } from "./commands/kill.ts";
+import { version } from "../package.json";
 
 const program = new Command();
 
 program
   .name("csb")
-  .description("Claude Sandbox CLI")
-  .version("0.1.0");
+  .description("Claude Sandbox CLI — run Claude Code in Docker")
+  .version(version);
+
+function addSharedFlags(cmd: Command): Command {
+  return cmd
+    .option("--mount <path>", "mount a host path into the container (append :ro for read-only)")
+    .option(
+      "--env <KEY=VALUE>",
+      "pass environment variable into container (repeatable)",
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[]
+    )
+    .option("--no-config", "skip mounting ~/.claude into container")
+    .option("--no-browser", "accepted for future slim image variant (no-op in v1)");
+}
+
+// csb run (explicit subcommand, also default)
+const runCmd = new Command("run")
+  .description("run a one-shot prompt in a throwaway container")
+  .argument("[prompt]", "prompt string (or use -f)")
+  .option("-f, --file <path>", "read prompt from file")
+  .option("-j, --json", "output result as JSON");
+
+addSharedFlags(runCmd);
+runCmd.action(async (prompt: string | undefined, opts) => {
+  await runCommand({
+    prompt: prompt ?? null,
+    file: opts.file ?? null,
+    json: opts.json ?? false,
+    mount: opts.mount ?? null,
+    env: opts.env ?? [],
+    noConfig: !opts.config,
+    noBrowser: !opts.browser,
+  });
+});
+
+program.addCommand(runCmd, { isDefault: true });
+
+// csb session
+const sessionCmd = new Command("session")
+  .description("start a persistent interactive Claude Code session")
+  .option("--name <name>", "name the session for easy reattachment");
+
+addSharedFlags(sessionCmd);
+sessionCmd.action(async (opts) => {
+  await sessionCommand({
+    name: opts.name ?? null,
+    mount: opts.mount ?? null,
+    env: opts.env ?? [],
+    noConfig: !opts.config,
+    noBrowser: !opts.browser,
+  });
+});
+
+program.addCommand(sessionCmd);
+
+// csb list
+program
+  .command("list")
+  .description("list active sessions")
+  .action(() => listCommand());
+
+// csb attach
+program
+  .command("attach <idOrName>")
+  .description("reattach to a running session")
+  .action((idOrName: string) => attachCommand(idOrName));
+
+// csb kill
+program
+  .command("kill [idOrName]")
+  .description("stop a session and clean up")
+  .option("--all", "kill all active sessions")
+  .action((idOrName: string | undefined, opts) => {
+    killCommand(idOrName ?? null, opts.all ?? false);
+  });
+
+// csb build
+program
+  .command("build")
+  .description("force rebuild the Docker image")
+  .action(async () => buildCommand({ force: true }));
 
 program.parse();
