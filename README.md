@@ -11,8 +11,8 @@ Run Claude Code in a throwaway Docker container. One-shot automation or persiste
 ## Install
 
 ```sh
-bun install -g cbox     # global install
-bunx cbox               # no-install, always latest
+bun install -g @_mehrad/cbox     # global install
+bunx @_mehrad/cbox               # no-install, always latest
 ```
 
 ## Quick Start
