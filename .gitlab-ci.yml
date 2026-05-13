@@ -37,6 +37,7 @@ npm-publish:
     - bun install --frozen-lockfile
     - bun run build
     - VERSION=$(bun -e "console.log(require('./package.json').version)")
-    - bunx npm view "@_mehrad/cbox@${VERSION}" version 2>/dev/null && echo "Version ${VERSION} already published, skipping." || bunx npm publish --access public
+    - STATUS=$(bun -e "fetch('https://registry.npmjs.org/@_mehrad%2Fcbox/${VERSION}').then(r=>process.stdout.write(String(r.status)))" 2>/dev/null)
+    - if [ "$STATUS" = "200" ]; then echo "Version ${VERSION} already published, skipping."; else bun publish --access public; fi
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
