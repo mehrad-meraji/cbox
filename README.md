@@ -5,8 +5,8 @@ Run Claude Code in a throwaway Docker container. One-shot automation or persiste
 ## Requirements
 
 - [Docker](https://docs.docker.com/get-docker/) (running)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code/getting-started) installed and logged in via `claude login`
 - [tmux](https://github.com/tmux/tmux) (required for `session`, `attach`)
-- `ANTHROPIC_API_KEY` environment variable set
 
 ## Install
 
@@ -22,13 +22,16 @@ bunx @_mehrad/cbox               # no-install, always latest
 cbox "refactor the auth module to use JWT"
 
 # Interactive: persistent Claude Code session
-cbox session --mount .
+cbox session -m .
 
 # Mount current directory and run a task from a file
-cbox run -f task.md --mount .
+cbox run -f task.md -m .
+
+# Mount multiple directories
+cbox run -m ./src -m ./tests "add tests for the auth module"
 
 # JSON output for scripting
-cbox run -j "list all TODO comments" --mount ./src
+cbox run -j "list all TODO comments" -m ./src
 ```
 
 ## Commands
@@ -36,15 +39,16 @@ cbox run -j "list all TODO comments" --mount ./src
 ### One-shot mode
 
 ```sh
-cbox "<prompt>"                        # implicit run
-cbox run "<prompt>"                    # explicit (same behaviour)
-cbox run -f task.md                    # prompt from file
-cbox run -j "<prompt>"                 # JSON output
-cbox run --mount . "<prompt>"          # mount cwd read-write
-cbox run --mount ./src:ro "<prompt>"   # mount read-only
-cbox run --env KEY=VALUE "<prompt>"    # pass env var into container
-cbox run --no-config "<prompt>"        # skip mounting ~/.claude
-cbox run --no-browser "<prompt>"       # skip agent-browser (lighter image)
+cbox "<prompt>"                          # implicit run
+cbox run "<prompt>"                      # explicit (same behaviour)
+cbox run -f task.md                      # prompt from file
+cbox run -j "<prompt>"                   # JSON output
+cbox run -m . "<prompt>"                 # mount cwd read-write
+cbox run -m ./src:ro "<prompt>"          # mount read-only
+cbox run -m ./src -m ./data "<prompt>"   # mount multiple directories
+cbox run --env KEY=VALUE "<prompt>"      # pass env var into container
+cbox run --no-config "<prompt>"          # skip mounting ~/.claude
+cbox run --no-browser "<prompt>"         # skip agent-browser (lighter image)
 ```
 
 Streams Claude Code's stdout/stderr directly. Exits with the container's exit code.
@@ -52,13 +56,14 @@ Streams Claude Code's stdout/stderr directly. Exits with the container's exit co
 ### Interactive session mode
 
 ```sh
-cbox session                           # start interactive session
-cbox session --mount .                 # mount cwd read-write
-cbox session --mount ./src:ro          # mount read-only
-cbox session --name refactor-auth      # named session
-cbox session --env KEY=VALUE           # pass env var
-cbox session --no-config               # skip mounting ~/.claude
-cbox session --no-browser              # lighter container
+cbox session                             # start interactive session
+cbox session -m .                        # mount cwd read-write
+cbox session -m ./src:ro                 # mount read-only
+cbox session -m ./src -m ./data          # mount multiple directories
+cbox session --name refactor-auth        # named session
+cbox session --env KEY=VALUE             # pass env var
+cbox session --no-config                 # skip mounting ~/.claude
+cbox session --no-browser                # lighter container
 ```
 
 Creates a tmux session on the host, starts Docker inside it. Attaching/detaching from tmux leaves the container running. Reconnect anytime with `cbox attach`.
@@ -86,7 +91,7 @@ The image is built automatically on first run and cached. It rebuilds when the C
 
 | Flag | Commands | Description |
 |---|---|---|
-| `--mount <path>` or `--mount <path>:ro` | `run`, `session` | Mount a host path into `/workspace` (default: read-write) |
+| `-m, --mount <path>` | `run`, `session` | Mount a host path (repeatable; append `:ro` for read-only) |
 | `--env KEY=VALUE` | `run`, `session` | Pass an environment variable into the container (repeatable) |
 | `--no-config` | `run`, `session` | Skip mounting `~/.claude` (fully isolated container) |
 | `--no-browser` | `run`, `session` | Skip agent-browser (smaller, faster startup) |
@@ -95,12 +100,17 @@ The image is built automatically on first run and cached. It rebuilds when the C
 
 ## Mounts
 
-`--mount .` resolves to the absolute path of your cwd at invocation time and mounts it as `-v /abs/path:/workspace:rw` inside the container. All mounts land at `/workspace`.
+Pass `-m` once for a single mount (lands at `/workspace`) or multiple times for named mounts (each lands at `/workspace/<dirname>`).
 
 ```sh
-cbox run --mount .            # /workspace = cwd (read-write)
-cbox run --mount ./src:ro     # /workspace = ./src (read-only)
-cbox run --mount /abs/path    # /workspace = /abs/path (read-write)
+# Single mount — lands at /workspace
+cbox run -m .                    # /workspace = cwd (read-write)
+cbox run -m ./src:ro             # /workspace = ./src (read-only)
+cbox run -m /abs/path            # /workspace = /abs/path (read-write)
+
+# Multiple mounts — each named by directory basename
+cbox run -m ./src -m ./tests     # /workspace/src + /workspace/tests
+cbox run -m ./src -m ./data:ro   # /workspace/src (rw) + /workspace/data (ro)
 ```
 
 ## Tools Inside the Container
@@ -195,7 +205,7 @@ Old images are left in place after upgrades. Clean them up with `docker image pr
 ## Building from Source
 
 ```sh
-git clone https://github.com/mehrad/cbox
+git clone https://gitlab.com/mehrad.meraji/cbox
 cd cbox
 bun install
 bun run build        # produces dist/cbox
