@@ -5,7 +5,9 @@ stages:
 pages:
   stage: deploy
   script:
-    - echo "Deploying cbox landing page to GitLab Pages"
+    - VERSION=$(grep '"version"' package.json | head -1 | awk -F'"' '{print $4}')
+    - sed -i "s/class=\"nav-ver\">v[0-9][0-9.]*/class=\"nav-ver\">v${VERSION}/g" public/index.html
+    - echo "Deploying cbox landing page v${VERSION} to GitLab Pages"
   artifacts:
     paths:
       - public
