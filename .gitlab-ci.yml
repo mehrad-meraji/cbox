@@ -34,7 +34,12 @@ npm-publish:
   before_script:
     - curl -fsSL https://bun.sh/install | bash
     - export PATH="$HOME/.bun/bin:$PATH"
-    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
+    - |
+      if [ -z "$NPM_TOKEN" ]; then
+        echo "ERROR: NPM_TOKEN is empty or not set. Go to GitLab > Settings > CI/CD > Variables and verify NPM_TOKEN exists and is NOT marked as Protected."
+        exit 1
+      fi
+    - npm config set //registry.npmjs.org/:_authToken "${NPM_TOKEN}"
   script:
     - bun install --frozen-lockfile
     - bun run build
