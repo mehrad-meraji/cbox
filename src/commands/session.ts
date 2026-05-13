@@ -51,7 +51,6 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     tmuxSession = `csb-${id}`;
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY!;
   const patchedSettingsPath = opts.noConfig ? null : patchMcpConfig();
 
   const dockerCmd = buildDockerSessionCmd({
@@ -62,7 +61,6 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     env: opts.env,
     mountConfig: !opts.noConfig,
     patchedSettingsPath,
-    apiKey,
   });
 
   createTmuxSession(tmuxSession, dockerCmd);

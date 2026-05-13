@@ -37,9 +37,10 @@ export function isContainerRunning(name: string): boolean {
   return result.stdout.toString().trim() === name;
 }
 
-export function stopContainer(name: string): void {
-  spawnSync("docker", ["stop", name], { stdio: "pipe" });
+export function stopContainer(name: string): boolean {
+  const stop = spawnSync("docker", ["stop", name], { stdio: "pipe" });
   spawnSync("docker", ["rm", "-f", name], { stdio: "pipe" });
+  return stop.status === 0;
 }
 
 export interface RunOpts {
@@ -88,10 +89,9 @@ export function buildDockerSessionCmd(opts: {
   env: string[];
   mountConfig: boolean;
   patchedSettingsPath: string | null;
-  apiKey: string;
 }): string {
   const args = buildSessionRunArgs(opts);
-  return `ANTHROPIC_API_KEY='${opts.apiKey}' docker run -it ${args.join(" ")} claude --dangerously-skip-permissions`;
+  return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -it ${args.join(" ")} claude --dangerously-skip-permissions`;
 }
 
 function buildRunArgs(

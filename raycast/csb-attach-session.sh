@@ -8,6 +8,13 @@
 # @raycast.argument1 { "type": "text", "placeholder": "Session ID or name" }
 
 SESSION="$1"
+
+# Validate session id/name to prevent osascript injection
+if ! echo "$SESSION" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+  echo "Error: invalid session ID or name: $SESSION"
+  exit 1
+fi
+
 TERM_APP=$(python3 -c "
 import json, os
 cfg = os.path.expanduser('~/.config/csb/config.json')

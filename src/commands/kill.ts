@@ -4,7 +4,10 @@ import { killTmuxSession } from "../tmux.ts";
 import type { Session } from "../registry.ts";
 
 function killOne(session: Session): void {
-  stopContainer(session.containerName);
+  const stopped = stopContainer(session.containerName);
+  if (!stopped) {
+    console.warn(`csb: warning — could not stop container ${session.containerName} (may already be stopped)`);
+  }
   killTmuxSession(session.tmuxSession);
   removeSession(session.id);
   console.log(`csb: killed session ${session.id}${session.name ? ` (${session.name})` : ""}`);

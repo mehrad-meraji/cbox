@@ -4,7 +4,7 @@ import { checkApiKey, checkDocker } from "../checks.ts";
 import { imageExists, buildImage, runOneShot } from "../docker.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
-import { patchMcpConfig, claudeDirPath } from "../mcp.ts";
+import { patchMcpConfig } from "../mcp.ts";
 import { version } from "../../package.json";
 
 export interface RunOptions {
