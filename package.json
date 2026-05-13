@@ -5,9 +5,17 @@
   "bin": {
     "cbox": "bin/cbox"
   },
+  "files": [
+    "bin/",
+    "dist/cbox-darwin-arm64",
+    "dist/cbox-darwin-x64",
+    "README.md"
+  ],
+  "os": ["darwin"],
   "scripts": {
     "start": "bun run src/index.ts",
     "build": "bun build --compile --minify src/index.ts --target=bun-darwin-arm64 --outfile dist/cbox-darwin-arm64 && bun build --compile --minify src/index.ts --target=bun-darwin-x64 --outfile dist/cbox-darwin-x64",
+    "prepublishOnly": "bun run build",
     "test": "bun test"
   },
   "dependencies": {

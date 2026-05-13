@@ -1,5 +1,8 @@
 #!/bin/sh
+case "$(uname -s)" in
+  Darwin) ;;
+  *) echo "cbox: unsupported OS: $(uname -s)" >&2; exit 1 ;;
+esac
 DIR=$(cd "$(dirname "$0")/.." && pwd)
-ARCH=$(uname -m)
-[ "$ARCH" = "arm64" ] && exec "$DIR/dist/cbox-darwin-arm64" "$@"
+[ "$(uname -m)" = "arm64" ] && exec "$DIR/dist/cbox-darwin-arm64" "$@"
 exec "$DIR/dist/cbox-darwin-x64" "$@"
