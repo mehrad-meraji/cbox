@@ -25,7 +25,7 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
   const tag = imageTag(version, config.mcpPackages);
 
   if (!imageExists(tag)) {
-    const pulled = config.mcpPackages.length === 0 && pullImage(tag, version);
+    const pulled = config.mcpPackages.length === 0 && pullImage(tag);
     if (!pulled) buildImage(tag, config.mcpPackages);
   }
 

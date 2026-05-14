@@ -45,12 +45,11 @@ export function imageExists(tag: string): boolean {
 
 const REGISTRY_IMAGE = "registry.gitlab.com/mehrad.meraji/cbox";
 
-export function pullImage(tag: string, version: string): boolean {
-  const remoteTag = `${REGISTRY_IMAGE}:v${version}`;
+export function pullImage(tag: string): boolean {
+  const remoteTag = `${REGISTRY_IMAGE}:latest`;
   console.log(`cbox: pulling ${remoteTag}...`);
   const pull = spawnSync("docker", ["pull", remoteTag], { stdio: "inherit" });
   if (pull.status !== 0) return false;
-  // retag to local name so imageExists() finds it next time
   spawnSync("docker", ["tag", remoteTag, tag], { stdio: "pipe" });
   return true;
 }
