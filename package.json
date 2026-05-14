@@ -1,6 +1,6 @@
 {
   "name": "@_mehrad/cbox",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Claude Sandbox CLI — run Claude Code in Docker",
   "bin": {
     "cbox": "bin/cbox"
