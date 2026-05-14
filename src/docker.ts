@@ -43,7 +43,7 @@ export function imageExists(tag: string): boolean {
   return result.status === 0;
 }
 
-const REGISTRY_IMAGE = "registry.gitlab.com/mehrad.meraji/cbox";
+const REGISTRY_IMAGE = "mehradm/cbox";
 
 export function pullImage(tag: string): boolean {
   const remoteTag = `${REGISTRY_IMAGE}:latest`;
