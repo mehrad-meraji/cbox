@@ -1,6 +1,6 @@
 {
   "name": "@_mehrad/cbox",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Claude Sandbox CLI — run Claude Code in Docker",
   "bin": {
     "cbox": "bin/cbox"
@@ -11,7 +11,9 @@
     "dist/cbox-darwin-x64",
     "README.md"
   ],
-  "os": ["darwin"],
+  "os": [
+    "darwin"
+  ],
   "scripts": {
     "start": "bun run src/index.ts",
     "build": "bun build --compile --minify src/index.ts --target=bun-darwin-arm64 --outfile dist/cbox-darwin-arm64 && bun build --compile --minify src/index.ts --target=bun-darwin-x64 --outfile dist/cbox-darwin-x64",
