@@ -3,6 +3,14 @@ case "$(uname -s)" in
   Darwin) ;;
   *) echo "cbox: unsupported OS: $(uname -s)" >&2; exit 1 ;;
 esac
-DIR=$(cd "$(dirname "$0")/.." && pwd)
+SELF="$0"
+while [ -L "$SELF" ]; do
+  LINK=$(readlink "$SELF")
+  case "$LINK" in
+    /*) SELF="$LINK" ;;
+    *)  SELF="$(dirname "$SELF")/$LINK" ;;
+  esac
+done
+DIR=$(cd "$(dirname "$SELF")/.." && pwd)
 [ "$(uname -m)" = "arm64" ] && exec "$DIR/dist/cbox-darwin-arm64" "$@"
 exec "$DIR/dist/cbox-darwin-x64" "$@"
