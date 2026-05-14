@@ -1,5 +1,5 @@
 import { checkApiKey, checkDocker, checkTmux } from "../checks.ts";
-import { imageExists, buildImage, buildDockerSessionCmd } from "../docker.ts";
+import { imageExists, pullImage, buildImage, buildDockerSessionCmd } from "../docker.ts";
 import { tmuxSessionExists, createTmuxSession, attachTmuxSession } from "../tmux.ts";
 import { addSession, generateId } from "../registry.ts";
 import { loadConfig } from "../config.ts";
@@ -25,7 +25,8 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
   const tag = imageTag(version, config.mcpPackages);
 
   if (!imageExists(tag)) {
-    buildImage(tag, config.mcpPackages);
+    const pulled = config.mcpPackages.length === 0 && pullImage(tag, version);
+    if (!pulled) buildImage(tag, config.mcpPackages);
   }
 
   const mounts = resolveMounts(opts.mount, config.defaultMountMode);

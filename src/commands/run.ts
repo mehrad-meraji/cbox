@@ -1,7 +1,7 @@
 import { resolve, basename } from "path";
 import { readFileSync, existsSync } from "fs";
 import { checkApiKey, checkDocker } from "../checks.ts";
-import { imageExists, buildImage, runOneShot, type MountSpec } from "../docker.ts";
+import { imageExists, pullImage, buildImage, runOneShot, type MountSpec } from "../docker.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
 import { patchMcpConfig } from "../mcp.ts";
@@ -63,7 +63,8 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   const tag = imageTag(version, config.mcpPackages);
 
   if (!imageExists(tag)) {
-    buildImage(tag, config.mcpPackages);
+    const pulled = config.mcpPackages.length === 0 && pullImage(tag, version);
+    if (!pulled) buildImage(tag, config.mcpPackages);
   }
 
   const mounts = resolveMounts(opts.mount, config.defaultMountMode);

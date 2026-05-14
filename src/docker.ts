@@ -43,6 +43,18 @@ export function imageExists(tag: string): boolean {
   return result.status === 0;
 }
 
+const REGISTRY_IMAGE = "registry.gitlab.com/mehrad.meraji/cbox";
+
+export function pullImage(tag: string, version: string): boolean {
+  const remoteTag = `${REGISTRY_IMAGE}:v${version}`;
+  console.log(`cbox: pulling ${remoteTag}...`);
+  const pull = spawnSync("docker", ["pull", remoteTag], { stdio: "inherit" });
+  if (pull.status !== 0) return false;
+  // retag to local name so imageExists() finds it next time
+  spawnSync("docker", ["tag", remoteTag, tag], { stdio: "pipe" });
+  return true;
+}
+
 export function buildImage(tag: string, mcpPackages: string[]): void {
   const { dockerfile, context } = dockerBuildContext();
   const args = ["build", "-t", tag, "-f", dockerfile];
