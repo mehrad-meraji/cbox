@@ -21,7 +21,10 @@ node -e "
   fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
 "
 
-git add package.json
+# Bump version in GitLab Pages site
+sed -i '' "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v${VERSION}/" public/index.html
+
+git add package.json public/index.html
 git commit -m "chore: bump version to ${VERSION}"
 git push origin main
 git tag "v${VERSION}"

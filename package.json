@@ -16,7 +16,9 @@
     "start": "bun run src/index.ts",
     "build": "bun build --compile --minify src/index.ts --target=bun-darwin-arm64 --outfile dist/cbox-darwin-arm64 && bun build --compile --minify src/index.ts --target=bun-darwin-x64 --outfile dist/cbox-darwin-x64",
     "prepublishOnly": "bun run build",
-    "test": "bun test"
+    "test": "bun test",
+    "release": "bash scripts/release.sh",
+    "publish:all": "bash scripts/publish.sh"
   },
   "dependencies": {
     "commander": "^14.0.0"
