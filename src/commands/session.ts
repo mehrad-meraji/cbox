@@ -4,7 +4,7 @@ import { tmuxSessionExists, createTmuxSession, attachTmuxSession } from "../tmux
 import { addSession, generateId } from "../registry.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
-import { patchMcpConfig } from "../mcp.ts";
+import { prepareClaudeDir } from "../mcp.ts";
 import { resolveMounts } from "./run.ts";
 import { version } from "../../package.json";
 
@@ -39,7 +39,7 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     tmuxSession = `cbox-${id}`;
   }
 
-  const patchedSettingsPath = opts.noConfig ? null : patchMcpConfig();
+  const claudeDirPath = opts.noConfig ? null : prepareClaudeDir();
 
   const dockerCmd = buildDockerSessionCmd({
     tag,
@@ -47,7 +47,7 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     mounts,
     env: opts.env,
     mountConfig: !opts.noConfig,
-    patchedSettingsPath,
+    claudeDirPath,
   });
 
   createTmuxSession(tmuxSession, dockerCmd);

@@ -4,7 +4,7 @@ import { checkApiKey, checkDocker } from "../checks.ts";
 import { imageExists, pullImage, buildImage, runOneShot, type MountSpec } from "../docker.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
-import { patchMcpConfig } from "../mcp.ts";
+import { prepareClaudeDir } from "../mcp.ts";
 import { version } from "../../package.json";
 
 export interface RunOptions {
@@ -68,7 +68,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   }
 
   const mounts = resolveMounts(opts.mount, config.defaultMountMode);
-  const patchedSettingsPath = opts.noConfig ? null : patchMcpConfig();
+  const claudeDirPath = opts.noConfig ? null : prepareClaudeDir();
 
   const { output, exitCode } = await runOneShot(
     {
@@ -77,7 +77,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
       mounts,
       env: opts.env,
       mountConfig: !opts.noConfig,
-      patchedSettingsPath,
+      claudeDirPath,
     },
     opts.json
   );

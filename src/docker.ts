@@ -103,7 +103,7 @@ export interface RunOpts {
   mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
-  patchedSettingsPath: string | null;
+  claudeDirPath: string | null;
 }
 
 export async function runOneShot(
@@ -137,7 +137,7 @@ export function buildDockerSessionCmd(opts: {
   mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
-  patchedSettingsPath: string | null;
+  claudeDirPath: string | null;
 }): string {
   const args = buildSessionRunArgs(opts);
   return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -it -e TERM ${args.join(" ")} claude --dangerously-skip-permissions`;
@@ -148,7 +148,7 @@ function buildRunArgs(opts: {
   mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
-  patchedSettingsPath: string | null;
+  claudeDirPath: string | null;
 }): string[] {
   const args: string[] = ["run", "--rm", "-e", "ANTHROPIC_API_KEY", "--add-host=host.docker.internal:host-gateway"];
 
@@ -162,11 +162,10 @@ function buildRunArgs(opts: {
 
   if (opts.mountConfig) {
     const home = process.env.HOME ?? "/root";
-    args.push("-v", `${home}/.claude:/home/node/.claude:ro`);
-    args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
-    if (opts.patchedSettingsPath) {
-      args.push("-v", `${opts.patchedSettingsPath}:/home/node/.claude/settings.json:rw`);
+    if (opts.claudeDirPath) {
+      args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
+    args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
   }
 
   args.push(opts.tag);
@@ -179,7 +178,7 @@ function buildSessionRunArgs(opts: {
   mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
-  patchedSettingsPath: string | null;
+  claudeDirPath: string | null;
 }): string[] {
   const args: string[] = ["--rm", "--name", opts.containerName, "-e", "ANTHROPIC_API_KEY", "--add-host=host.docker.internal:host-gateway"];
 
@@ -193,11 +192,10 @@ function buildSessionRunArgs(opts: {
 
   if (opts.mountConfig) {
     const home = process.env.HOME ?? "/root";
-    args.push("-v", `${home}/.claude:/home/node/.claude:ro`);
-    args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
-    if (opts.patchedSettingsPath) {
-      args.push("-v", `${opts.patchedSettingsPath}:/home/node/.claude/settings.json:rw`);
+    if (opts.claudeDirPath) {
+      args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
+    args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
   }
 
   args.push(opts.tag);
