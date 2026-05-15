@@ -44,6 +44,9 @@ export function prepareClaudeDir(): string {
     rest.mcpServers = patched;
   }
 
+  // Pre-accept the workspace trust dialog so it never appears in the container
+  rest.hasTrustDialogAccepted = true;
+
   const out = JSON.stringify(rest)
     .replace(/localhost/g, "host.docker.internal")
     .replace(/127\.0\.0\.1/g, "host.docker.internal");
