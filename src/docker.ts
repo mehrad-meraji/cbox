@@ -131,16 +131,15 @@ export async function runOneShot(
   }
 }
 
-export function buildDockerSessionCmd(opts: {
+export function buildDockerSessionArgs(opts: {
   tag: string;
   containerName: string;
   mounts: MountSpec[];
   env: string[];
   mountConfig: boolean;
   claudeDirPath: string | null;
-}): string {
-  const args = buildSessionRunArgs(opts);
-  return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -it -e TERM ${args.join(" ")} claude --dangerously-skip-permissions`;
+}): string[] {
+  return ["run", "-it", "-e", "TERM", ...buildSessionRunArgs(opts), "claude", "--dangerously-skip-permissions"];
 }
 
 function buildRunArgs(opts: {

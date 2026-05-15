@@ -1,6 +1,6 @@
 import { spawnSync } from "child_process";
 import { checkApiKey, checkDocker } from "../checks.ts";
-import { imageExists, pullImage, buildImage, buildDockerSessionCmd } from "../docker.ts";
+import { imageExists, pullImage, buildImage, buildDockerSessionArgs } from "../docker.ts";
 import { addSession, generateId, removeSession } from "../registry.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
@@ -34,7 +34,7 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
   const containerName = `cbox-${id}`;
   const claudeDirPath = opts.noConfig ? null : prepareClaudeDir();
 
-  const dockerCmd = buildDockerSessionCmd({
+  const dockerArgs = buildDockerSessionArgs({
     tag,
     containerName,
     mounts,
@@ -54,8 +54,8 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
 
   console.log(`cbox: session ${id}${opts.name ? ` (${opts.name})` : ""} started`);
 
-  // Run docker directly in the foreground — no tmux nesting, full PTY ownership
-  spawnSync("sh", ["-c", dockerCmd], { stdio: "inherit" });
+  // Spawn docker directly — no shell wrapper, no nested PTY layers
+  spawnSync("docker", dockerArgs, { stdio: "inherit" });
 
   removeSession(id);
 }

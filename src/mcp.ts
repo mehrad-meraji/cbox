@@ -21,13 +21,33 @@ export function prepareClaudeDir(): string {
     }
   }
 
-  // Write patched settings.json (replace localhost with host.docker.internal)
+  // Write patched settings.json — patch localhost and strip container-incompatible keys
   const settingsPath = join(src, "settings.json");
-  const raw = existsSync(settingsPath) ? readFileSync(settingsPath, "utf8") : "{}";
-  const patched = raw
+  let settings: Record<string, unknown> = {};
+  if (existsSync(settingsPath)) {
+    try { settings = JSON.parse(readFileSync(settingsPath, "utf8")); } catch {}
+  }
+
+  // Remove keys that cause hangs in containers: local binaries, npm downloads, plugin paths
+  const { statusLine: _, enabledPlugins: __, extraKnownMarketplaces: ___, ...rest } = settings as any;
+
+  // Patch MCP server URLs but drop servers that use local commands (no absolute path, no http)
+  if (rest.mcpServers && typeof rest.mcpServers === "object") {
+    const patched: Record<string, unknown> = {};
+    for (const [name, cfg] of Object.entries(rest.mcpServers as Record<string, any>)) {
+      const cmd: string = Array.isArray(cfg.command) ? cfg.command[0] : (cfg.command ?? "");
+      // Keep only servers whose command is an absolute path or a known container binary
+      if (cmd.startsWith("/") || cmd === "node" || cmd === "python" || cmd === "python3") {
+        patched[name] = cfg;
+      }
+    }
+    rest.mcpServers = patched;
+  }
+
+  const out = JSON.stringify(rest)
     .replace(/localhost/g, "host.docker.internal")
     .replace(/127\.0\.0\.1/g, "host.docker.internal");
-  writeFileSync(join(tmpDir, "settings.json"), patched);
+  writeFileSync(join(tmpDir, "settings.json"), out);
 
   return tmpDir;
 }
