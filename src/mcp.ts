@@ -64,7 +64,7 @@ export function prepareClaudeJson(): string {
     try { data = JSON.parse(readFileSync(src, "utf8")); } catch {}
   }
 
-  // Trust flags: global + per-project (trust is stored under projects[path])
+  // Skip workspace trust dialog
   data.hasTrustDialogAccepted = true;
   const projects = (data.projects as Record<string, unknown>) ?? {};
   projects["/workspace"] = {
@@ -73,6 +73,9 @@ export function prepareClaudeJson(): string {
     hasCompletedProjectOnboarding: true,
   };
   data.projects = projects;
+
+  // Skip --dangerously-skip-permissions disclaimer
+  data.bypassPermissionsModeAccepted = true;
 
   writeFileSync(tmpPath, JSON.stringify(data));
   return tmpPath;
