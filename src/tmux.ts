@@ -6,12 +6,11 @@ export function tmuxSessionExists(name: string): boolean {
 }
 
 export function createTmuxSession(sessionName: string, command: string): void {
-  const result = spawnSync("tmux", ["new-session", "-d", "-s", sessionName, "bash", "-c", command], {
-    stdio: "inherit",
-  });
-  if (result.status !== 0) {
+  const create = spawnSync("tmux", ["new-session", "-d", "-s", sessionName], { stdio: "inherit" });
+  if (create.status !== 0) {
     throw new Error(`Failed to create tmux session: ${sessionName}`);
   }
+  spawnSync("tmux", ["send-keys", "-t", sessionName, command, "Enter"], { stdio: "inherit" });
 }
 
 export function attachTmuxSession(sessionName: string): void {
