@@ -140,7 +140,7 @@ export function buildDockerSessionCmd(opts: {
   patchedSettingsPath: string | null;
 }): string {
   const args = buildSessionRunArgs(opts);
-  return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -it ${args.join(" ")} claude --dangerously-skip-permissions`;
+  return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -i -e TERM ${args.join(" ")} claude --dangerously-skip-permissions`;
 }
 
 function buildRunArgs(opts: {
