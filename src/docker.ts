@@ -139,7 +139,7 @@ export function buildDockerSessionArgs(opts: {
   mountConfig: boolean;
   claudeDirPath: string | null;
 }): string[] {
-  return ["run", "-it", "-e", "TERM", ...buildSessionRunArgs(opts), "claude", "--dangerously-skip-permissions"];
+  return ["run", "-it", "-e", "TERM", ...buildSessionRunArgs(opts), "sh", "-c", "stty -icrnl 2>/dev/null; exec claude --dangerously-skip-permissions"];
 }
 
 function buildRunArgs(opts: {
