@@ -20,12 +20,11 @@ RUN if [ -n "$MCP_PACKAGES" ]; then npm install -g $MCP_PACKAGES; fi
 # Point agent-browser at system Chromium (avoids arch-specific Chrome for Testing)
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Non-root user — required because claude --dangerously-skip-permissions
-# refuses to run as root
-RUN useradd -m -u 1000 -s /bin/bash claude \
-    && mkdir -p /workspace && chown claude:claude /workspace
+# node:20 base image ships a 'node' user at UID 1000 — use it directly
+# claude --dangerously-skip-permissions refuses to run as root
+RUN mkdir -p /workspace && chown node:node /workspace
 
-USER claude
+USER node
 WORKDIR /workspace
 ENTRYPOINT []
 CMD ["claude", "--dangerously-skip-permissions"]
