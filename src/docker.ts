@@ -140,7 +140,7 @@ export function buildDockerSessionCmd(opts: {
   patchedSettingsPath: string | null;
 }): string {
   const args = buildSessionRunArgs(opts);
-  return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -i -e TERM ${args.join(" ")} claude --dangerously-skip-permissions`;
+  return `env ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" docker run -it -e TERM ${args.join(" ")} claude --dangerously-skip-permissions`;
 }
 
 function buildRunArgs(opts: {
@@ -165,7 +165,7 @@ function buildRunArgs(opts: {
     args.push("-v", `${home}/.claude:/home/node/.claude:ro`);
     args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
     if (opts.patchedSettingsPath) {
-      args.push("-v", `${opts.patchedSettingsPath}:/home/node/.claude/settings.json:ro`);
+      args.push("-v", `${opts.patchedSettingsPath}:/home/node/.claude/settings.json:rw`);
     }
   }
 
@@ -196,7 +196,7 @@ function buildSessionRunArgs(opts: {
     args.push("-v", `${home}/.claude:/home/node/.claude:ro`);
     args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
     if (opts.patchedSettingsPath) {
-      args.push("-v", `${opts.patchedSettingsPath}:/home/node/.claude/settings.json:ro`);
+      args.push("-v", `${opts.patchedSettingsPath}:/home/node/.claude/settings.json:rw`);
     }
   }
 

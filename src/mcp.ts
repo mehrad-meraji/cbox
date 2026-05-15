@@ -10,22 +10,21 @@ function settingsPath(): string {
   return join(claudeDir(), "settings.json");
 }
 
-export function patchMcpConfig(): string | null {
+export function patchMcpConfig(): string {
   const path = settingsPath();
-  if (!existsSync(path)) return null;
+  const tmpPath = join(tmpdir(), `cbox-settings-${Date.now()}.json`);
 
   try {
-    const raw = readFileSync(path, "utf8");
+    const raw = existsSync(path) ? readFileSync(path, "utf8") : "{}";
     const patched = raw
       .replace(/localhost/g, "host.docker.internal")
       .replace(/127\.0\.0\.1/g, "host.docker.internal");
-
-    const tmpPath = join(tmpdir(), `cbox-settings-${Date.now()}.json`);
     writeFileSync(tmpPath, patched);
-    return tmpPath;
   } catch {
-    return null;
+    writeFileSync(tmpPath, "{}");
   }
+
+  return tmpPath;
 }
 
 export function claudeDirPath(): string {
