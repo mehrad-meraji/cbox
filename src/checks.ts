@@ -31,11 +31,3 @@ export function checkDocker(): void {
     process.exit(1);
   }
 }
-
-export function checkTmux(): void {
-  const result = spawnSync("tmux", ["-V"], { stdio: "pipe" });
-  if (result.error) {
-    console.error("cbox: tmux not found.\nInstall with: brew install tmux");
-    process.exit(1);
-  }
-}

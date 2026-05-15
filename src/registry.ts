@@ -6,7 +6,6 @@ import { randomBytes } from "crypto";
 export interface Session {
   id: string;
   name: string | null;
-  tmuxSession: string;
   containerName: string;
   mount: string | null;
   mountMode: "rw" | "ro" | null;

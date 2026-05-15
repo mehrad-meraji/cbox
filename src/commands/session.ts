@@ -1,7 +1,7 @@
-import { checkApiKey, checkDocker, checkTmux } from "../checks.ts";
+import { spawnSync } from "child_process";
+import { checkApiKey, checkDocker } from "../checks.ts";
 import { imageExists, pullImage, buildImage, buildDockerSessionCmd } from "../docker.ts";
-import { tmuxSessionExists, createTmuxSession, attachTmuxSession } from "../tmux.ts";
-import { addSession, generateId } from "../registry.ts";
+import { addSession, generateId, removeSession } from "../registry.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
 import { prepareClaudeDir } from "../mcp.ts";
@@ -19,7 +19,6 @@ export interface SessionOptions {
 export async function sessionCommand(opts: SessionOptions): Promise<void> {
   checkApiKey(opts.noConfig);
   checkDocker();
-  checkTmux();
 
   const config = loadConfig();
   const tag = imageTag(version, config.mcpPackages);
@@ -31,37 +30,32 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
 
   const mounts = resolveMounts(opts.mount, config.defaultMountMode);
 
-  let id = generateId();
-  let tmuxSession = `cbox-${id}`;
-
-  if (tmuxSessionExists(tmuxSession)) {
-    id = generateId();
-    tmuxSession = `cbox-${id}`;
-  }
-
+  const id = generateId();
+  const containerName = `cbox-${id}`;
   const claudeDirPath = opts.noConfig ? null : prepareClaudeDir();
 
   const dockerCmd = buildDockerSessionCmd({
     tag,
-    containerName: `cbox-${id}`,
+    containerName,
     mounts,
     env: opts.env,
     mountConfig: !opts.noConfig,
     claudeDirPath,
   });
 
-  createTmuxSession(tmuxSession, dockerCmd);
-
   addSession({
     id,
     name: opts.name,
-    tmuxSession,
-    containerName: `cbox-${id}`,
+    containerName,
     mount: mounts.length === 1 ? mounts[0].hostPath : mounts.length > 1 ? mounts.map(m => m.hostPath).join(",") : null,
     mountMode: mounts.length > 0 ? mounts[0].mode : null,
     createdAt: new Date().toISOString(),
   });
 
   console.log(`cbox: session ${id}${opts.name ? ` (${opts.name})` : ""} started`);
-  attachTmuxSession(tmuxSession);
+
+  // Run docker directly in the foreground — no tmux nesting, full PTY ownership
+  spawnSync("sh", ["-c", dockerCmd], { stdio: "inherit" });
+
+  removeSession(id);
 }

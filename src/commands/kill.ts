@@ -1,6 +1,5 @@
 import { findSession, getSessions, removeSession } from "../registry.ts";
 import { stopContainer } from "../docker.ts";
-import { killTmuxSession } from "../tmux.ts";
 import type { Session } from "../registry.ts";
 
 function killOne(session: Session): void {
@@ -8,7 +7,6 @@ function killOne(session: Session): void {
   if (!stopped) {
     console.warn(`cbox: warning — could not stop container ${session.containerName} (may already be stopped)`);
   }
-  killTmuxSession(session.tmuxSession);
   removeSession(session.id);
   console.log(`cbox: killed session ${session.id}${session.name ? ` (${session.name})` : ""}`);
 }
