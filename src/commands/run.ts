@@ -4,7 +4,7 @@ import { checkApiKey, checkDocker } from "../checks.ts";
 import { imageExists, pullImage, buildImage, runOneShot, type MountSpec } from "../docker.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
-import { prepareClaudeDir } from "../mcp.ts";
+import { prepareClaudeDir, prepareClaudeJson } from "../mcp.ts";
 import { version } from "../../package.json";
 
 export interface RunOptions {
@@ -69,6 +69,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
 
   const mounts = resolveMounts(opts.mount, config.defaultMountMode);
   const claudeDirPath = opts.noConfig ? null : prepareClaudeDir();
+  const claudeJsonPath = opts.noConfig ? null : prepareClaudeJson();
 
   const { output, exitCode } = await runOneShot(
     {
@@ -78,6 +79,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
       env: opts.env,
       mountConfig: !opts.noConfig,
       claudeDirPath,
+      claudeJsonPath,
     },
     opts.json
   );

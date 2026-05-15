@@ -104,6 +104,7 @@ export interface RunOpts {
   env: string[];
   mountConfig: boolean;
   claudeDirPath: string | null;
+  claudeJsonPath: string | null;
 }
 
 export async function runOneShot(
@@ -138,6 +139,7 @@ export function buildDockerSessionArgs(opts: {
   env: string[];
   mountConfig: boolean;
   claudeDirPath: string | null;
+  claudeJsonPath: string | null;
 }): string[] {
   return ["run", "-it", "-e", "TERM", ...buildSessionRunArgs(opts), "sh", "-c", "stty -icrnl 2>/dev/null; exec claude --dangerously-skip-permissions"];
 }
@@ -148,6 +150,7 @@ function buildRunArgs(opts: {
   env: string[];
   mountConfig: boolean;
   claudeDirPath: string | null;
+  claudeJsonPath: string | null;
 }): string[] {
   const args: string[] = ["run", "--rm", "-e", "ANTHROPIC_API_KEY", "--add-host=host.docker.internal:host-gateway"];
 
@@ -164,7 +167,9 @@ function buildRunArgs(opts: {
     if (opts.claudeDirPath) {
       args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
-    args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
+    if (opts.claudeJsonPath) {
+      args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:ro`);
+    }
   }
 
   args.push(opts.tag);
@@ -178,6 +183,7 @@ function buildSessionRunArgs(opts: {
   env: string[];
   mountConfig: boolean;
   claudeDirPath: string | null;
+  claudeJsonPath: string | null;
 }): string[] {
   const args: string[] = ["--rm", "--name", opts.containerName, "-e", "ANTHROPIC_API_KEY", "--add-host=host.docker.internal:host-gateway"];
 
@@ -194,7 +200,9 @@ function buildSessionRunArgs(opts: {
     if (opts.claudeDirPath) {
       args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
-    args.push("-v", `${home}/.claude.json:/home/node/.claude.json:ro`);
+    if (opts.claudeJsonPath) {
+      args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:ro`);
+    }
   }
 
   args.push(opts.tag);

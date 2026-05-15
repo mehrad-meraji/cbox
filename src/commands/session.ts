@@ -4,7 +4,7 @@ import { imageExists, pullImage, buildImage, buildDockerSessionArgs } from "../d
 import { addSession, generateId, removeSession } from "../registry.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
-import { prepareClaudeDir } from "../mcp.ts";
+import { prepareClaudeDir, prepareClaudeJson } from "../mcp.ts";
 import { resolveMounts } from "./run.ts";
 import { version } from "../../package.json";
 
@@ -33,6 +33,7 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
   const id = generateId();
   const containerName = `cbox-${id}`;
   const claudeDirPath = opts.noConfig ? null : prepareClaudeDir();
+  const claudeJsonPath = opts.noConfig ? null : prepareClaudeJson();
 
   const dockerArgs = buildDockerSessionArgs({
     tag,
@@ -41,6 +42,7 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     env: opts.env,
     mountConfig: !opts.noConfig,
     claudeDirPath,
+    claudeJsonPath,
   });
 
   addSession({

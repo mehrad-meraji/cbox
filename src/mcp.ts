@@ -55,6 +55,21 @@ export function prepareClaudeDir(): string {
   return tmpDir;
 }
 
+export function prepareClaudeJson(): string {
+  const src = join(homedir(), ".claude.json");
+  const tmpPath = join(tmpdir(), `cbox-claude-${Date.now()}.json`);
+
+  let data: Record<string, unknown> = {};
+  if (existsSync(src)) {
+    try { data = JSON.parse(readFileSync(src, "utf8")); } catch {}
+  }
+
+  data.hasTrustDialogAccepted = true;
+
+  writeFileSync(tmpPath, JSON.stringify(data));
+  return tmpPath;
+}
+
 export function claudeDirPath(): string {
   return claudeDir();
 }
