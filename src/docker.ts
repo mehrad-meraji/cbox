@@ -15,16 +15,22 @@ RUN apt-get update && apt-get install -y \\
     --no-install-recommends \\
     && rm -rf /var/lib/apt/lists/*
 
-# Core tools
+# Install global tools as root so they land in /usr/local/bin
 RUN npm install -g @anthropic-ai/claude-code agent-browser
-
-# Point agent-browser at system Chromium (avoids arch-specific Chrome for Testing)
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Local MCP packages (space-separated list injected at build time)
 ARG MCP_PACKAGES=""
 RUN if [ -n "$MCP_PACKAGES" ]; then npm install -g $MCP_PACKAGES; fi
 
+# Point agent-browser at system Chromium (avoids arch-specific Chrome for Testing)
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Non-root user — required because claude --dangerously-skip-permissions
+# refuses to run as root
+RUN useradd -m -u 1000 -s /bin/bash claude \\
+    && mkdir -p /workspace && chown claude:claude /workspace
+
+USER claude
 WORKDIR /workspace
 ENTRYPOINT []
 CMD ["claude", "--dangerously-skip-permissions"]
@@ -157,9 +163,10 @@ function buildRunArgs(opts: {
 
   if (opts.mountConfig) {
     const home = process.env.HOME ?? "/root";
-    args.push("-v", `${home}/.claude:/root/.claude:ro`);
+    args.push("-v", `${home}/.claude:/home/claude/.claude:ro`);
+    args.push("-v", `${home}/.claude.json:/home/claude/.claude.json:ro`);
     if (opts.patchedSettingsPath) {
-      args.push("-v", `${opts.patchedSettingsPath}:/root/.claude/settings.json:ro`);
+      args.push("-v", `${opts.patchedSettingsPath}:/home/claude/.claude/settings.json:ro`);
     }
   }
 
@@ -187,9 +194,10 @@ function buildSessionRunArgs(opts: {
 
   if (opts.mountConfig) {
     const home = process.env.HOME ?? "/root";
-    args.push("-v", `${home}/.claude:/root/.claude:ro`);
+    args.push("-v", `${home}/.claude:/home/claude/.claude:ro`);
+    args.push("-v", `${home}/.claude.json:/home/claude/.claude.json:ro`);
     if (opts.patchedSettingsPath) {
-      args.push("-v", `${opts.patchedSettingsPath}:/root/.claude/settings.json:ro`);
+      args.push("-v", `${opts.patchedSettingsPath}:/home/claude/.claude/settings.json:ro`);
     }
   }
 
