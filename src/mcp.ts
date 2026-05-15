@@ -64,7 +64,15 @@ export function prepareClaudeJson(): string {
     try { data = JSON.parse(readFileSync(src, "utf8")); } catch {}
   }
 
+  // Trust flags: global + per-project (trust is stored under projects[path])
   data.hasTrustDialogAccepted = true;
+  const projects = (data.projects as Record<string, unknown>) ?? {};
+  projects["/workspace"] = {
+    ...(projects["/workspace"] as Record<string, unknown> ?? {}),
+    hasTrustDialogAccepted: true,
+    hasCompletedProjectOnboarding: true,
+  };
+  data.projects = projects;
 
   writeFileSync(tmpPath, JSON.stringify(data));
   return tmpPath;
