@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, chmodSync } from "fs";
 import { homedir, tmpdir } from "os";
 import { join } from "path";
 
@@ -50,7 +50,10 @@ export function prepareClaudeDir(): string {
   const out = JSON.stringify(rest)
     .replace(/localhost/g, "host.docker.internal")
     .replace(/127\.0\.0\.1/g, "host.docker.internal");
-  writeFileSync(join(tmpDir, "settings.json"), out);
+  const settingsOut = join(tmpDir, "settings.json");
+  writeFileSync(settingsOut, out);
+  chmodSync(settingsOut, 0o666);   // writable by container's node user (UID 1000)
+  chmodSync(tmpDir, 0o777);
 
   return tmpDir;
 }
@@ -78,6 +81,7 @@ export function prepareClaudeJson(): string {
   data.bypassPermissionsModeAccepted = true;
 
   writeFileSync(tmpPath, JSON.stringify(data));
+  chmodSync(tmpPath, 0o666);   // writable by container's node user (UID 1000)
   return tmpPath;
 }
 

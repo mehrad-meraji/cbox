@@ -168,7 +168,7 @@ function buildRunArgs(opts: {
       args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
     if (opts.claudeJsonPath) {
-      args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:ro`);
+      args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:rw`);
     }
   }
 
@@ -201,7 +201,7 @@ function buildSessionRunArgs(opts: {
       args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
     if (opts.claudeJsonPath) {
-      args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:ro`);
+      args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:rw`);
     }
   }
 
