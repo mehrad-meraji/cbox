@@ -1,13 +1,13 @@
 import { spawnSync } from "child_process";
-import { writeFileSync, mkdirSync } from "fs";
-import { tmpdir } from "os";
+import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { tmpdir, homedir } from "os";
 import { join } from "path";
 
 const DOCKERFILE_CONTENT = `FROM node:20-bookworm-slim
 
 # System Chromium + dependencies (works on both x86_64 and ARM64)
 RUN apt-get update && apt-get install -y \\
-    chromium wget gnupg ca-certificates fonts-liberation \\
+    git chromium wget gnupg ca-certificates fonts-liberation \\
     libappindicator3-1 libasound2 libatk-bridge2.0-0 \\
     libatk1.0-0 libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 \\
     libnspr4 libnss3 libx11-xcb1 libxcomposite1 \\
@@ -168,13 +168,17 @@ function buildRunArgs(opts: {
   }
 
   if (opts.mountConfig) {
-    const home = process.env.HOME ?? "/root";
     if (opts.claudeDirPath) {
       args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
     if (opts.claudeJsonPath) {
       args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:rw`);
     }
+  }
+
+  const gitConfig = join(homedir(), ".gitconfig");
+  if (existsSync(gitConfig)) {
+    args.push("-v", `${gitConfig}:/home/node/.gitconfig:ro`);
   }
 
   args.push(opts.tag);
@@ -201,13 +205,17 @@ function buildSessionRunArgs(opts: {
   }
 
   if (opts.mountConfig) {
-    const home = process.env.HOME ?? "/root";
     if (opts.claudeDirPath) {
       args.push("-v", `${opts.claudeDirPath}:/home/node/.claude:rw`);
     }
     if (opts.claudeJsonPath) {
       args.push("-v", `${opts.claudeJsonPath}:/home/node/.claude.json:rw`);
     }
+  }
+
+  const gitConfig = join(homedir(), ".gitconfig");
+  if (existsSync(gitConfig)) {
+    args.push("-v", `${gitConfig}:/home/node/.gitconfig:ro`);
   }
 
   args.push(opts.tag);
