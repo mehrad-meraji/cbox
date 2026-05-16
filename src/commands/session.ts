@@ -43,6 +43,7 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     mountConfig: !opts.noConfig,
     claudeDirPath,
     claudeJsonPath,
+    cboxVersion: version,
   });
 
   addSession({

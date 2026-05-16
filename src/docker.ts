@@ -140,12 +140,13 @@ export function buildDockerSessionArgs(opts: {
   mountConfig: boolean;
   claudeDirPath: string | null;
   claudeJsonPath: string | null;
+  cboxVersion: string;
 }): string[] {
   const banner =
     `printf '\\033]0;cbox [sandbox]\\007'` +
-    `; printf '\\033[32m\\n  ╔══════════════════════════════════╗\\n  ║     cbox · sandboxed session     ║\\n  ╚══════════════════════════════════╝\\033[0m\\n  🛡  ${opts.containerName}\\n\\n'`;
+    `; printf '\\033[32m\\n  ╔══════════════════════════════════╗\\n  ║     cbox · sandboxed session     ║\\n  ╚══════════════════════════════════╝\\033[0m\\n  🛡  ${opts.containerName}  ·  cbox v${opts.cboxVersion}\\n\\n'`;
   const shellCmd = `stty -icrnl 2>/dev/null; ${banner}; exec claude --dangerously-skip-permissions`;
-  return ["run", "-it", "-e", "TERM", ...buildSessionRunArgs(opts), "sh", "-c", shellCmd];
+  return ["run", "-it", "-e", "TERM", "-e", "CI=1", ...buildSessionRunArgs(opts), "sh", "-c", shellCmd];
 }
 
 function buildRunArgs(opts: {
