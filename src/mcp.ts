@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, chmodSync } from "fs";
 import { homedir, tmpdir } from "os";
 import { join } from "path";
+import { spawnSync } from "child_process";
 
 function claudeDir(): string {
   return process.env.CLAUDE_DIR ?? join(homedir(), ".claude");
@@ -54,6 +55,20 @@ export function prepareClaudeDir(): string {
   writeFileSync(settingsOut, out);
   chmodSync(settingsOut, 0o666);   // writable by container's node user (UID 1000)
   chmodSync(tmpDir, 0o777);
+
+  // Extract OAuth credentials from macOS Keychain and write .credentials.json
+  // so Claude Code on Linux (which can't access Keychain) finds them in ~/.claude/
+  const keychainResult = spawnSync(
+    "security",
+    ["find-generic-password", "-s", "Claude Code-credentials", "-w"],
+    { stdio: "pipe" }
+  );
+  if (keychainResult.status === 0) {
+    const credJson = keychainResult.stdout.toString().trim();
+    const credPath = join(tmpDir, ".credentials.json");
+    writeFileSync(credPath, credJson);
+    chmodSync(credPath, 0o666);
+  }
 
   return tmpDir;
 }
