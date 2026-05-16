@@ -9,7 +9,7 @@ echo "Publishing v${VERSION}..."
 sed -i '' "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v${VERSION}/" public/index.html
 
 bun run build
-npm publish --access public
+npm publish --access public "$@"
 
 git add public/index.html
 git commit -m "chore: publish v${VERSION}" --allow-empty
