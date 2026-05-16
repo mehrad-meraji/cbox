@@ -28,6 +28,7 @@ export function parseMountFlag(flag: string): { path: string; mode: "rw" | "ro" 
 
 export function resolveMounts(mountFlags: string[], defaultMode: "rw" | "ro"): MountSpec[] {
   const specs: MountSpec[] = [];
+  const used = new Set<string>();
   for (const flag of mountFlags) {
     const { path, mode } = parseMountFlag(flag);
     const hostPath = resolve(path);
@@ -35,7 +36,21 @@ export function resolveMounts(mountFlags: string[], defaultMode: "rw" | "ro"): M
       console.error(`cbox: mount path does not exist: ${hostPath}`);
       process.exit(1);
     }
-    const containerPath = mountFlags.length === 1 ? "/workspace" : `/workspace/${basename(hostPath)}`;
+    let containerPath: string;
+    if (mountFlags.length === 1) {
+      containerPath = "/workspace";
+    } else {
+      const base = basename(hostPath);
+      containerPath = `/workspace/${base}`;
+      let counter = 2;
+      while (used.has(containerPath)) {
+        containerPath = `/workspace/${base}-${counter++}`;
+      }
+      if (counter > 2) {
+        console.warn(`cbox: duplicate mount basename "${base}", using ${containerPath}`);
+      }
+    }
+    used.add(containerPath);
     specs.push({ hostPath, containerPath, mode });
   }
   return specs;
