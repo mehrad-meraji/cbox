@@ -23,9 +23,11 @@ jobs:
       - name: Publish (skip if already published)
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          npm view "@_mehrad/cbox@${VERSION}" version 2>/dev/null \
-            && echo "Version ${VERSION} already published, skipping." \
-            || npm publish --access public --provenance
+          if curl -sf "https://registry.npmjs.org/@_mehrad%2fcbox/${VERSION}" > /dev/null; then
+            echo "Version ${VERSION} already published, skipping."
+          else
+            npm publish --access public --provenance
+          fi
 
   publish-docker:
     name: Publish to Docker Hub
