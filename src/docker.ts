@@ -7,7 +7,7 @@ const DOCKERFILE_CONTENT = `FROM node:20-bookworm-slim
 
 # System Chromium + dependencies (works on both x86_64 and ARM64)
 RUN apt-get update && apt-get install -y \\
-    git chromium wget gnupg ca-certificates fonts-liberation \\
+    git tmux chromium wget gnupg ca-certificates fonts-liberation \\
     libappindicator3-1 libasound2 libatk-bridge2.0-0 \\
     libatk1.0-0 libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 \\
     libnspr4 libnss3 libx11-xcb1 libxcomposite1 \\
@@ -28,6 +28,9 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 # node:20 base image ships a 'node' user at UID 1000 — use it directly
 # claude --dangerously-skip-permissions refuses to run as root
 RUN mkdir -p /workspace && chown node:node /workspace
+
+# Minimal tmux config — no status bar, nothing else
+RUN echo 'set -g status off' > /home/node/.tmux.conf && chown node:node /home/node/.tmux.conf
 
 USER node
 WORKDIR /workspace
@@ -145,7 +148,7 @@ export function buildDockerSessionArgs(opts: {
   const banner =
     `printf '\\033]0;cbox [sandbox]\\007'` +
     `; printf '\\033[32m\\n  ╔══════════════════════════════════╗\\n  ║     cbox · sandboxed session     ║\\n  ╚══════════════════════════════════╝\\033[0m\\n  🛡  ${opts.containerName}  ·  cbox v${opts.cboxVersion}\\n\\n'`;
-  const shellCmd = `stty -icrnl 2>/dev/null; ${banner}; exec claude --dangerously-skip-permissions`;
+  const shellCmd = `stty -icrnl 2>/dev/null; ${banner}; exec tmux new-session -s main 'claude --dangerously-skip-permissions'`;
   return ["run", "-it", "-e", "TERM", "-e", "CI=1", ...buildSessionRunArgs(opts), "sh", "-c", shellCmd];
 }
 

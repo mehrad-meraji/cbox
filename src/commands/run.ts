@@ -5,6 +5,8 @@ import { imageExists, pullImage, buildImage, runOneShot, type MountSpec } from "
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
 import { prepareClaudeDir, prepareClaudeJson } from "../mcp.ts";
+import { generateId } from "../registry.ts";
+import { snapshotMount, cleanupSnapshot } from "../snapshot.ts";
 import { version } from "../../package.json";
 
 export interface RunOptions {
@@ -15,6 +17,7 @@ export interface RunOptions {
   env: string[];
   noConfig: boolean;
   noBrowser: boolean;
+  strict: boolean;
 }
 
 export function parseMountFlag(flag: string): { path: string; mode: "rw" | "ro" } {
@@ -83,8 +86,27 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   }
 
   const mounts = resolveMounts(opts.mount, config.defaultMountMode);
+
+  if (opts.strict) {
+    for (const m of mounts) m.mode = "ro";
+  }
+
   const claudeDirPath = opts.noConfig ? null : prepareClaudeDir();
   const claudeJsonPath = opts.noConfig ? null : prepareClaudeJson();
+
+  // Snapshot the primary rw mount before running so the code path is exercised.
+  // For one-shot runs there is no persistent session ID, so the snapshot is
+  // cleaned up after the container exits (not persisted to registry).
+  const primaryMount = mounts.find((m) => m.mode === "rw");
+  const snapId = generateId();
+  let snapshot;
+  if (primaryMount) {
+    try {
+      snapshot = await snapshotMount(primaryMount.hostPath, `run-${snapId}`);
+    } catch (err) {
+      console.warn(`cbox: warning: failed to snapshot mount: ${(err as Error).message}`);
+    }
+  }
 
   const { output, exitCode } = await runOneShot(
     {
@@ -98,6 +120,14 @@ export async function runCommand(opts: RunOptions): Promise<void> {
     },
     opts.json
   );
+
+  if (snapshot) {
+    try {
+      await cleanupSnapshot(snapshot);
+    } catch {
+      // Non-fatal — at worst a few MB left in ~/.config/cbox/snapshots/
+    }
+  }
 
   if (opts.json) {
     console.log(

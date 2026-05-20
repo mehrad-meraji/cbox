@@ -2,6 +2,7 @@ import { homedir } from "os";
 import { join } from "path";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from "fs";
 import { randomBytes } from "crypto";
+import type { SnapshotRef } from "./snapshot.ts";
 
 export interface Session {
   id: string;
@@ -10,6 +11,9 @@ export interface Session {
   mount: string | null;
   mountMode: "rw" | "ro" | null;
   createdAt: string;
+  // Added in v0.2.0 (M0):
+  snapshot?: SnapshotRef;
+  strict?: boolean;
 }
 
 interface Registry {

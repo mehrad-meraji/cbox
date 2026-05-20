@@ -1,24 +1,34 @@
 import { findSession, getSessions, removeSession } from "../registry.ts";
 import { stopContainer } from "../docker.ts";
+import { cleanupSnapshot } from "../snapshot.ts";
 import type { Session } from "../registry.ts";
 
-function killOne(session: Session): void {
+async function killOne(session: Session): Promise<void> {
   const stopped = stopContainer(session.containerName);
   if (!stopped) {
     console.warn(`cbox: warning — could not stop container ${session.containerName} (may already be stopped)`);
   }
   removeSession(session.id);
   console.log(`cbox: killed session ${session.id}${session.name ? ` (${session.name})` : ""}`);
+
+  if (session.snapshot) {
+    try {
+      await cleanupSnapshot(session.snapshot);
+    } catch (err) {
+      // Non-fatal — at worst a few MB left in ~/.config/cbox/snapshots/
+      console.warn(`cbox: warning: failed to clean up snapshot: ${(err as Error).message}`);
+    }
+  }
 }
 
-export function killCommand(idOrName: string | null, all: boolean): void {
+export async function killCommand(idOrName: string | null, all: boolean): Promise<void> {
   if (all) {
     const sessions = getSessions();
     if (sessions.length === 0) {
       console.log("cbox: no active sessions");
       return;
     }
-    for (const s of sessions) killOne(s);
+    for (const s of sessions) await killOne(s);
     return;
   }
 
@@ -32,5 +42,5 @@ export function killCommand(idOrName: string | null, all: boolean): void {
     console.error(`cbox: session not found: ${idOrName}\nRun 'cbox list' to see active sessions.`);
     process.exit(1);
   }
-  killOne(session);
+  await killOne(session);
 }

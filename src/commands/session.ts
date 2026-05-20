@@ -5,6 +5,7 @@ import { addSession, generateId, removeSession } from "../registry.ts";
 import { loadConfig } from "../config.ts";
 import { imageTag } from "../image.ts";
 import { prepareClaudeDir, prepareClaudeJson } from "../mcp.ts";
+import { snapshotMount, cleanupSnapshot } from "../snapshot.ts";
 import { resolveMounts } from "./run.ts";
 import { version } from "../../package.json";
 
@@ -14,6 +15,7 @@ export interface SessionOptions {
   env: string[];
   noConfig: boolean;
   noBrowser: boolean;
+  strict: boolean;
 }
 
 export async function sessionCommand(opts: SessionOptions): Promise<void> {
@@ -29,6 +31,10 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
   }
 
   const mounts = resolveMounts(opts.mount, config.defaultMountMode);
+
+  if (opts.strict) {
+    for (const m of mounts) m.mode = "ro";
+  }
 
   const id = generateId();
   const containerName = `cbox-${id}`;
@@ -46,6 +52,17 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     cboxVersion: version,
   });
 
+  // Take a snapshot of the primary rw mount before starting the container.
+  const primaryMount = mounts.find((m) => m.mode === "rw");
+  let snapshot;
+  if (primaryMount) {
+    try {
+      snapshot = await snapshotMount(primaryMount.hostPath, id);
+    } catch (err) {
+      console.warn(`cbox: warning: failed to snapshot mount: ${(err as Error).message}`);
+    }
+  }
+
   addSession({
     id,
     name: opts.name,
@@ -53,6 +70,8 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
     mount: mounts.length === 1 ? mounts[0].hostPath : mounts.length > 1 ? mounts.map(m => m.hostPath).join(",") : null,
     mountMode: mounts.length > 0 ? mounts[0].mode : null,
     createdAt: new Date().toISOString(),
+    snapshot,
+    strict: opts.strict,
   });
 
   console.log(`cbox: session ${id}${opts.name ? ` (${opts.name})` : ""} started`);
@@ -61,4 +80,12 @@ export async function sessionCommand(opts: SessionOptions): Promise<void> {
   spawnSync("docker", dockerArgs, { stdio: "inherit" });
 
   removeSession(id);
+
+  if (snapshot) {
+    try {
+      await cleanupSnapshot(snapshot);
+    } catch (err) {
+      console.warn(`cbox: warning: failed to clean up snapshot: ${(err as Error).message}`);
+    }
+  }
 }

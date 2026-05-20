@@ -7,8 +7,14 @@ RUN apt-get update && apt-get install -y \
     libatk1.0-0 libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 \
     libnspr4 libnss3 libx11-xcb1 libxcomposite1 \
     libxdamage1 libxrandr2 xdg-utils \
+    git curl unzip \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash && \
+    ln -s /root/.bun/bin/bun /usr/local/bin/bun && \
+    ln -s /root/.bun/bin/bunx /usr/local/bin/bunx
 
 # Install global tools as root so they land in /usr/local/bin
 RUN npm install -g @anthropic-ai/claude-code agent-browser

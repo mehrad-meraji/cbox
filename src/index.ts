@@ -6,6 +6,7 @@ import { sessionCommand } from "./commands/session.ts";
 import { listCommand } from "./commands/list.ts";
 import { attachCommand } from "./commands/attach.ts";
 import { killCommand } from "./commands/kill.ts";
+import { registerDiffCommand } from "./commands/diff.ts";
 import { version } from "../package.json";
 
 const program = new Command();
@@ -30,7 +31,8 @@ function addSharedFlags(cmd: Command): Command {
       [] as string[]
     )
     .option("--no-config", "skip mounting ~/.claude into container")
-    .option("--no-browser", "accepted for future slim image variant (no-op in v1)");
+    .option("--no-browser", "accepted for future slim image variant (no-op in v1)")
+    .option("--strict", "tighter security defaults: forces all mounts to :ro (M1+ will add further restrictions); sessions run under --strict take no mount snapshot since ro mounts cannot be mutated");
 }
 
 // cbox run (explicit subcommand, also default)
@@ -50,6 +52,7 @@ runCmd.action(async (prompt: string | undefined, opts) => {
     env: opts.env ?? [],
     noConfig: !opts.config,
     noBrowser: !opts.browser,
+    strict: opts.strict ?? false,
   });
 });
 
@@ -68,8 +71,11 @@ sessionCmd.action(async (opts) => {
     env: opts.env ?? [],
     noConfig: !opts.config,
     noBrowser: !opts.browser,
+    strict: opts.strict ?? false,
   });
 });
+
+registerDiffCommand(sessionCmd);
 
 program.addCommand(sessionCmd);
 
@@ -90,8 +96,8 @@ program
   .command("kill [idOrName]")
   .description("stop a session and clean up")
   .option("--all", "kill all active sessions")
-  .action((idOrName: string | undefined, opts) => {
-    killCommand(idOrName ?? null, opts.all ?? false);
+  .action(async (idOrName: string | undefined, opts) => {
+    await killCommand(idOrName ?? null, opts.all ?? false);
   });
 
 // cbox build

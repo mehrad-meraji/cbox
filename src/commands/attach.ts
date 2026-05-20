@@ -7,5 +7,5 @@ export function attachCommand(idOrName: string): void {
     console.error(`cbox: session not found: ${idOrName}\nRun 'cbox list' to see active sessions.`);
     process.exit(1);
   }
-  spawnSync("docker", ["attach", session.containerName], { stdio: "inherit" });
+  spawnSync("docker", ["exec", "-it", session.containerName, "tmux", "attach-session", "-t", "main"], { stdio: "inherit" });
 }
