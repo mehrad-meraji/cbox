@@ -21,7 +21,7 @@ node -e "
   fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
 "
 
-# Bump version in GitLab Pages site
+# Bump version in Pages site
 sed -i '' "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v${VERSION}/" public/index.html
 
 git add package.json public/index.html
@@ -30,4 +30,4 @@ git push origin main
 git tag "v${VERSION}"
 git push origin "v${VERSION}"
 
-echo "v${VERSION} tagged and pushed — CI will publish to npm and Docker registry."
+echo "v${VERSION} tagged and pushed — GitHub Actions will publish to npm and Docker Hub."
